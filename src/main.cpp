@@ -110,6 +110,7 @@ void setup() {
 
   // SCD30 and GPS setup:
   initGPS();
+  delay(100);
   initSCD30();
 
 
@@ -134,19 +135,37 @@ void loop() {
   while (ss.available() > 0)
     gps.encode(ss.read());
 
+  if (gps.charsProcessed() < 10)
+    Serial.println(F("WARNING: No GPS data.  Check wiring."));
+
   if (airSensor.dataAvailable()) {
-    Serial.print("co2(ppm):");
-    Serial.print(airSensor.getCO2());
 
-    Serial.print(" temp(C):");
-    Serial.print(airSensor.getTemperature(), 1);
-
-    Serial.print(" humidity(%):");
-    Serial.print(airSensor.getHumidity(), 1);
-
-    Serial.println();
+    uint16_t co2 = airSensor.getCO2();
+    float temp = airSensor.getTemperature();
+    float hum = airSensor.getHumidity();
     
-    Serial.printf("Lat: %f - Long: %f - Date: %d - Time: %d - Spped: %f km/h\n", gps.location.lat(), gps.location.lng(), gps.date.value(), gps.time.value(), gps.speed.kmph());
+    Serial.print("co2(ppm):");
+    Serial.print(co2);
+    Serial.print(" temp(C):");
+    Serial.print(temp, 1);
+    Serial.print(" humidity(%):");
+    Serial.print(hum, 1);
+    Serial.println();
+
+    double lat = gps.location.lat();
+    double lng = gps.location.lng();
+    uint32_t gpsDate = gps.date.value();
+    uint32_t gpsTime = gps.time.value();
+    double gpsSpeed = gps.speed.kmph();
+
+    uint32_t gpsSat = gps.satellites.value();
+    double gpsAltitude = gps.altitude.meters();
+    double gpsHdop = gps.hdop.hdop();
+    double gpsCourse = gps.course.deg();
+
+    
+    Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
+    Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
 
 
     if(mqttClient->connected()) {
@@ -155,18 +174,25 @@ void loop() {
       String msg_pub;
       StaticJsonDocument<256> doc;
 
-      doc["CO2"] = airSensor.getCO2();
-      doc["temp"] = airSensor.getTemperature();
-      doc["humidity"] = airSensor.getHumidity();
-      doc["lat"] = gps.location.lat();
-      doc["lng"] = gps.location.lng();
-      doc["date"] = gps.date.value();
-      doc["time"] = gps.time.value();
-      doc["speed"] = gps.speed.kmph();
+      doc["CO2"] = co2;
+      doc["temp"] = temp;
+      doc["humidity"] = hum;
+      doc["lat"] = lat;
+      doc["lng"] = lng;
+      doc["date"] = gpsDate;
+      doc["time"] = gpsTime;
+      doc["speed"] = gpsSpeed;
+      doc["satellites"] = gpsSat;
+      doc["altitude"] = gpsAltitude;
+      doc["hdop"] = gpsHdop;
+      doc["course"] = gpsCourse;
       doc["wifiSta_rssi"] = WiFi.RSSI();
 
       serializeJson(doc, msg_pub);    
       mqttClient->publish(topic.c_str(), msg_pub.c_str());
+      
+      Serial.println(msg_pub);
+
 
     }
 
