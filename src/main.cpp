@@ -105,6 +105,11 @@ void setup() {
     Serial.setDebugOutput(true);
   #endif
 
+  #ifdef ARDUINO_IOTPOSTBOX_V1
+  pinMode(LDO2_EN_PIN, OUTPUT);
+  digitalWrite(LDO2_EN_PIN, HIGH);
+  #endif
+
   config.begin();
  
   config.addDashboardObject("heap_free", getHeapFree);
