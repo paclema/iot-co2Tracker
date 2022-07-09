@@ -54,8 +54,8 @@ void initSCD30(void){
   if (airSensor.begin(Wire, true) == false)
   {
       Serial.println("Air sensor not detected. Please check wiring. Freezing...");
-      while (1)
-          ;
+      // while (1)
+      //     ;
   }
 
   airSensor.setMeasurementInterval(2); //Change number of seconds between measurements: 2 to 1800 (30 minutes)
