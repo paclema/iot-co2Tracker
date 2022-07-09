@@ -34,10 +34,17 @@ SCD30 airSensor;
 // GPS
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
-static const int RXPin = 14, TXPin = 12; // RX to D6 and TX to D5
+
+#ifndef GPS_RX_PIN
+  #define GPS_RX_PIN 14 // Wemos D1 mini/pro RX to D6 
+#endif
+#ifndef GPS_TX_PIN
+  #define GPS_TX_PIN 12 // Wemos D1 mini/pro TX to D5 
+#endif
+
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
-SoftwareSerial ss(RXPin, TXPin);
+SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
 
 
 void initSCD30(void){
