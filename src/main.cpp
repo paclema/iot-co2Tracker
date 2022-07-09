@@ -42,9 +42,40 @@ SCD30 airSensor;
   #define GPS_TX_PIN 12 // Wemos D1 mini/pro TX to D5 
 #endif
 
+#define GPS_DATA_PUBLISH_TIME 1000
+
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
 SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
+
+
+//Main variables:
+uint16_t co2 = 0;
+float temp = 0;
+float hum = 0;
+
+double lat = 0;
+double lng = 0;
+uint32_t gpsDate = 0;
+uint32_t gpsTime = 0;
+double gpsSpeed = 0;
+
+uint32_t gpsSat = 0;
+double gpsAltitude = 0;
+double gpsHdop = 0;
+double gpsCourse = 0;
+
+
+String topic = "";
+StaticJsonDocument<256> doc;
+
+
+unsigned long lastGPSPublish = 0UL;
+
+
+
+
+
 
 
 void initSCD30(void){
@@ -126,6 +157,8 @@ void setup() {
   initSCD30();
 
 
+  topic = config.getDeviceTopic() + "data";
+
   Serial.println("###  Looping time\n");
 
 }
@@ -150,11 +183,63 @@ void loop() {
   if (gps.charsProcessed() < 10)
     Serial.println(F("WARNING: No GPS data.  Check wiring."));
 
+
+  if (currentLoopMillis - lastGPSPublish > GPS_DATA_PUBLISH_TIME){
+    lastGPSPublish = currentLoopMillis;
+
+    // if (gps.location.isUpdated()){
+    //   Serial.printf("---> NEW GPS location: %lf - %lf\n", gps.location.lat(), gps.location.lng());
+    // } 
+    // if (gps.speed.isUpdated()){
+    //   Serial.printf("---> NEW GPS speed: %lf\n", gps.speed.kmph());
+    // }
+
+
+    lat = gps.location.lat();
+    lng = gps.location.lng();
+    gpsDate = gps.date.value();
+    gpsTime = gps.time.value();
+    gpsSpeed = gps.speed.kmph();
+
+    gpsSat = gps.satellites.value();
+    gpsAltitude = gps.altitude.meters();
+    gpsHdop = gps.hdop.hdop();
+    gpsCourse = gps.course.deg();
+
+    
+    // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
+    // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
+
+
+    if(mqttClient->connected()) {
+
+      String msg_pub;
+      StaticJsonDocument<256> doc;
+
+      doc["lat"] = lat;
+      doc["lng"] = lng;
+      doc["date"] = gpsDate;
+      doc["time"] = gpsTime;
+      doc["speed"] = gpsSpeed;
+      doc["satellites"] = gpsSat;
+      doc["altitude"] = gpsAltitude;
+      doc["hdop"] = gpsHdop;
+      doc["course"] = gpsCourse;
+      doc["wifiSta_rssi"] = WiFi.RSSI();
+
+      serializeJson(doc, msg_pub);    
+      mqttClient->publish(topic.c_str(), msg_pub.c_str());
+      
+      // Serial.println(msg_pub);
+    }
+
+  }
+
   if (airSensor.dataAvailable()) {
 
-    uint16_t co2 = airSensor.getCO2();
-    float temp = airSensor.getTemperature();
-    float hum = airSensor.getHumidity();
+    co2 = airSensor.getCO2();
+    temp = airSensor.getTemperature();
+    hum = airSensor.getHumidity();
     
     Serial.print("co2(ppm):");
     Serial.print(co2);
@@ -164,16 +249,16 @@ void loop() {
     Serial.print(hum, 1);
     Serial.println();
 
-    double lat = gps.location.lat();
-    double lng = gps.location.lng();
-    uint32_t gpsDate = gps.date.value();
-    uint32_t gpsTime = gps.time.value();
-    double gpsSpeed = gps.speed.kmph();
+    lat = gps.location.lat();
+    lng = gps.location.lng();
+    gpsDate = gps.date.value();
+    gpsTime = gps.time.value();
+    gpsSpeed = gps.speed.kmph();
 
-    uint32_t gpsSat = gps.satellites.value();
-    double gpsAltitude = gps.altitude.meters();
-    double gpsHdop = gps.hdop.hdop();
-    double gpsCourse = gps.course.deg();
+    gpsSat = gps.satellites.value();
+    gpsAltitude = gps.altitude.meters();
+    gpsHdop = gps.hdop.hdop();
+    gpsCourse = gps.course.deg();
 
     
     Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
@@ -182,7 +267,6 @@ void loop() {
 
     if(mqttClient->connected()) {
 
-      String topic = config.getDeviceTopic() + "data";
       String msg_pub;
       StaticJsonDocument<256> doc;
 
