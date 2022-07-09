@@ -53,6 +53,12 @@ static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
 SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
 
+// IMU MPU9250
+#include <MPU9250_asukiaaa.h>
+MPU9250_asukiaaa mySensor;
+float aX, aY, aZ, aSqrt, gX, gY, gZ, mDirection, mX, mY, mZ;
+
+
 
 //Main variables:
 uint16_t co2 = 0;
@@ -105,7 +111,7 @@ void initSCD30(void){
 
   //The SCD30 has data ready every two seconds
 
-    //Read altitude compensation value
+  //Read altitude compensation value
   unsigned int altitude = airSensor.getAltitudeCompensation();
   Serial.print("Current altitude: ");
   Serial.print(altitude);
@@ -134,6 +140,77 @@ void initGPS(void){
   ss.begin(GPSBaud);
 }
 
+void initIMU(void){
+  // Wire.begin(SDA, SCL); //Already init
+  mySensor.setWire(&Wire);
+
+  mySensor.beginAccel();
+  mySensor.beginGyro();
+  mySensor.beginMag();
+
+  // You can set your own offset for mag values
+  // mySensor.magXOffset = -50;
+  // mySensor.magYOffset = -55;
+  // mySensor.magZOffset = -10;
+
+
+}
+
+void printIMUdata(void){
+  uint8_t sensorId;
+  int result;
+
+  result = mySensor.readId(&sensorId);
+  if (result == 0) {
+    Serial.println("sensorId: " + String(sensorId));
+  } else {
+    Serial.println("Cannot read sensorId " + String(result));
+  }
+
+  result = mySensor.accelUpdate();
+  if (result == 0) {
+    aX = mySensor.accelX();
+    aY = mySensor.accelY();
+    aZ = mySensor.accelZ();
+    aSqrt = mySensor.accelSqrt();
+    Serial.println("accelX: " + String(aX));
+    Serial.println("accelY: " + String(aY));
+    Serial.println("accelZ: " + String(aZ));
+    Serial.println("accelSqrt: " + String(aSqrt));
+  } else {
+    Serial.println("Cannod read accel values " + String(result));
+  }
+
+  result = mySensor.gyroUpdate();
+  if (result == 0) {
+    gX = mySensor.gyroX();
+    gY = mySensor.gyroY();
+    gZ = mySensor.gyroZ();
+    Serial.println("gyroX: " + String(gX));
+    Serial.println("gyroY: " + String(gY));
+    Serial.println("gyroZ: " + String(gZ));
+  } else {
+    Serial.println("Cannot read gyro values " + String(result));
+  }
+
+  result = mySensor.magUpdate();
+  if (result == 0) {
+    mX = mySensor.magX();
+    mY = mySensor.magY();
+    mZ = mySensor.magZ();
+    mDirection = mySensor.magHorizDirection();
+    Serial.println("magX: " + String(mX));
+    Serial.println("maxY: " + String(mY));
+    Serial.println("magZ: " + String(mZ));
+    Serial.println("horizontal direction: " + String(mDirection));
+  } else {
+    Serial.println("Cannot read mag values " + String(result));
+  }
+
+  Serial.println("at " + String(millis()) + "ms");
+  Serial.println(""); // Add an empty line
+}
+
 void setup() {
   Serial.begin(115200);
   
@@ -142,6 +219,7 @@ void setup() {
   #endif
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
+  // while(!Serial) {}
   pinMode(LDO2_EN_PIN, OUTPUT);
   digitalWrite(LDO2_EN_PIN, HIGH);
   power.setup();
@@ -157,13 +235,14 @@ void setup() {
 
 
 
-  // SCD30 and GPS setup:
+  // SCD30, GPS and IMU setup:
   initGPS();
   delay(100);
   initSCD30();
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
   #endif
+  initIMU();
 
   topic = config.getDeviceTopic() + "data";
 
@@ -278,6 +357,8 @@ void loop() {
     gpsAltitude = gps.altitude.meters();
     gpsHdop = gps.hdop.hdop();
     gpsCourse = gps.course.deg();
+
+    printIMUdata();
 
     
     Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
