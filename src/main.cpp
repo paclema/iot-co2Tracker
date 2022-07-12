@@ -17,6 +17,11 @@ unsigned long previousMainLoopMillis = 0;
 #include "WebConfigServer.h"
 WebConfigServer config;   // <- global configuration object
 
+#ifdef ARDUINO_IOTPOSTBOX_V1
+#include "PowerManagement.h"
+PowerManagement power;
+#endif
+
 
 // Websocket functions to publish:
 String getLoopTime(){ return String(currentLoopMillis - previousMainLoopMillis);}
@@ -139,6 +144,7 @@ void setup() {
   #ifdef ARDUINO_IOTPOSTBOX_V1
   pinMode(LDO2_EN_PIN, OUTPUT);
   digitalWrite(LDO2_EN_PIN, HIGH);
+  power.setup();
   #endif
 
   config.begin();
@@ -155,7 +161,9 @@ void setup() {
   initGPS();
   delay(100);
   initSCD30();
-
+  #ifdef ARDUINO_IOTPOSTBOX_V1
+  power.update();
+  #endif
 
   topic = config.getDeviceTopic() + "data";
 
@@ -168,6 +176,10 @@ void loop() {
   currentLoopMillis = millis();
 
   config.loop();
+
+  #ifdef ARDUINO_IOTPOSTBOX_V1
+  power.update();
+  #endif
 
   // Reconnection loop:
   // if (WiFi.status() != WL_CONNECTED) {
@@ -226,8 +238,15 @@ void loop() {
       doc["hdop"] = gpsHdop;
       doc["course"] = gpsCourse;
       doc["wifiSta_rssi"] = WiFi.RSSI();
+      #ifdef ARDUINO_IOTPOSTBOX_V1
+      doc["vBat"] = (float)power.vBatSense.mV/1000;
+      doc["vBus"] = (float)power.vBusSense.mV/1000;
+      doc["PowerStatus"] = (int)power.getPowerStatus();
+      doc["ChargingStatus"] = (int)power.getChargingStatus();
+      #endif
 
-      serializeJson(doc, msg_pub);    
+      serializeJson(doc, msg_pub);
+      mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
       mqttClient->publish(topic.c_str(), msg_pub.c_str());
       
       // Serial.println(msg_pub);
@@ -283,8 +302,14 @@ void loop() {
       doc["hdop"] = gpsHdop;
       doc["course"] = gpsCourse;
       doc["wifiSta_rssi"] = WiFi.RSSI();
-
-      serializeJson(doc, msg_pub);    
+      #ifdef ARDUINO_IOTPOSTBOX_V1
+      doc["vBat"] = (float)power.vBatSense.mV/1000;
+      doc["vBus"] = (float)power.vBusSense.mV/1000;
+      doc["PowerStatus"] = (int)power.getPowerStatus();
+      doc["ChargingStatus"] = (int)power.getChargingStatus();
+      #endif
+      serializeJson(doc, msg_pub);
+      mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
       mqttClient->publish(topic.c_str(), msg_pub.c_str());
       
       Serial.println(msg_pub);
