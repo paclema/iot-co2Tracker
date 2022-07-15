@@ -62,6 +62,15 @@ TinyGPSPlus gps;
 SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
 
 
+// OLED screen
+#include <Adafruit_SSD1306.h>
+#define SCREEN_WIDTH 128       // OLED display width, in pixels
+#define SCREEN_HEIGHT 64       // OLED display height, in pixels
+#define OLED_RESET -1          //Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C    //See datasheet for Address
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
 //Main variables:
 uint16_t co2 = 0;
 float temp = 0;
@@ -135,6 +144,15 @@ void initSCD30(void){
 
 }
 
+void initOLED(void){
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
+    Serial.println(F("SSD1306 allocation failed"));
+    // for (;;); // Don't proceed, loop forever
+  }
+  display.clearDisplay();
+  display.display();
+
+}
 void initGPS(void){
   Serial.print(F("TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
   Serial.println();
@@ -142,22 +160,64 @@ void initGPS(void){
   ss.begin(GPSBaud);
 }
 
+void updateDisplay(void){
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(3);
+  display.print(gpsSpeed);
+
+  display.setCursor(75, 20);
+  display.setTextSize(2);
+  display.print("km/h");
+
+  display.setTextSize(1);
+  display.setCursor(0, 30);
+  display.print("Co2:");
+  display.setCursor(25, 30);
+  display.print(co2);
+
+  display.setTextSize(1);
+  display.setCursor(0, 50);
+  display.print("SAT:");
+  display.setCursor(25, 50);
+  display.print(gpsSat);
+
+  display.setTextSize(1);
+  display.setCursor(70, 50);
+  display.print("ALT:");
+  display.setCursor(95, 50);
+  display.print(gpsAltitude, 0);
+
+  display.display();
+}
+
+void displayNoData(){
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.setTextSize(3);
+    display.print("No Data");
+    display.display();
+}
+
 
 void logGPS(void){
   std::stringstream fileName;
   std::stringstream gpsLocation;
   
-      lat = gps.location.lat();
-      lng = gps.location.lng();
-      gpsDate = gps.date.value();
-      gpsTime = gps.time.value();
-      gpsSpeed = gps.speed.kmph();
+  lat = gps.location.lat();
+  lng = gps.location.lng();
+  gpsDate = gps.date.value();
+  gpsTime = gps.time.value();
+  gpsSpeed = gps.speed.kmph();
 
-      gpsSat = gps.satellites.value();
-      gpsAltitude = gps.altitude.meters();
-      gpsHdop = gps.hdop.hdop();
-      gpsCourse = gps.course.deg();
+  gpsSat = gps.satellites.value();
+  gpsAltitude = gps.altitude.meters();
+  gpsHdop = gps.hdop.hdop();
+  gpsCourse = gps.course.deg();
 
+  updateDisplay();
+  
   // Create file if it ods not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
   if( !SPIFFS.exists( fileName.str().c_str()) ) {
@@ -224,6 +284,8 @@ void setup() {
 
 
   // SCD30 and GPS setup:
+  initOLED();
+  displayNoData();
   initGPS();
   delay(100);
   initSCD30();
@@ -308,8 +370,8 @@ void loop() {
         mqttClient->publish(topic.c_str(), msg_pub.c_str());
         // Serial.println(msg_pub);
       }
-    }
-    
+
+    } else displayNoData();
 
     
 
