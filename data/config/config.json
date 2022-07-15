@@ -71,7 +71,7 @@
       ]
     },
     "ntp": {
-      "enabled": true,
+      "enabled": false,
       "ntpServer": "pool.ntp.org",
       "gmt_offset_sec": 0,
       "daylight_offset_sec": 3600
