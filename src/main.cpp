@@ -27,6 +27,12 @@ PowerManagement power;
 String getLoopTime(){ return String(currentLoopMillis - previousMainLoopMillis);}
 String getRSSI(){ return String(WiFi.RSSI());}
 String getHeapFree(){ return String((float)GET_FREE_HEAP/1000);}
+String getMemoryUsageString(){ 
+  String r = String("\"Used: " + config.getUsedBytess() + " Free: " +  config.getFreeBytes() + "\"");
+  Serial.println(r);
+  return r;}
+String getMemoryFree(){  return String(SPIFFS.totalBytes() - SPIFFS.usedBytes());};
+
 
 #include <PubSubClient.h>
 PubSubClient * mqttClient;
@@ -142,6 +148,7 @@ void setup() {
   #endif
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
+  // while(!Serial) {}
   pinMode(LDO2_EN_PIN, OUTPUT);
   digitalWrite(LDO2_EN_PIN, HIGH);
   power.setup();
@@ -151,6 +158,9 @@ void setup() {
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
+  config.addDashboardObject("SPIFFS_Usage", getMemoryUsageString);
+  config.addDashboardObject("SPIFFS_Free", getMemoryFree);
+
   config.addDashboardObject("RSSI", getRSSI);
 
   mqttClient = config.getMQTTClient();
