@@ -11,6 +11,11 @@
 // Device configurations
 unsigned long currentLoopMillis = 0;
 unsigned long previousMainLoopMillis = 0;
+size_t totalBytes;
+size_t usedBytes;
+size_t freeBytes;
+unsigned long previousSPIFFSLoopMillis = 0;
+#define SPIFFS_CHECK_SPACE_TIME 5000
 
 
 // WebConfigServer Configuration
@@ -23,15 +28,16 @@ PowerManagement power;
 #endif
 
 
+
 // Websocket functions to publish:
 String getLoopTime(){ return String(currentLoopMillis - previousMainLoopMillis);}
 String getRSSI(){ return String(WiFi.RSSI());}
 String getHeapFree(){ return String((float)GET_FREE_HEAP/1000);}
 String getMemoryUsageString(){ 
-  String r = String("\"Used: " + config.getUsedBytess() + " Free: " +  config.getFreeBytes() + "\"");
-  Serial.println(r);
+  String r = String("\"Used: " + config.formatBytes(usedBytes) + " Free: " +  config.formatBytes(freeBytes) + "\"");
+  // Serial.println(r);
   return r;}
-String getMemoryFree(){  return String(SPIFFS.totalBytes() - SPIFFS.usedBytes());};
+String getMemoryFree(){  return String(freeBytes);};
 
 
 #include <PubSubClient.h>
@@ -47,6 +53,7 @@ SCD30 airSensor;
 #include <SoftwareSerial.h>
 #include <string.h>
 #include <sstream>
+
 
 #ifndef GPS_RX_PIN
   #define GPS_RX_PIN 14 // Wemos D1 mini/pro RX to D6 
@@ -220,8 +227,8 @@ void logGPS(void){
   
   // Create file if it ods not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
-  if( !SPIFFS.exists( fileName.str().c_str()) ) {
-    File file = SPIFFS.open( fileName.str().c_str(), FILE_WRITE);
+  if( !LittleFS.exists( fileName.str().c_str()) ) {
+    File file = LittleFS.open( fileName.str().c_str(), FILE_WRITE);
     if(!file){
       Serial.println("Failed to create file");
       return;
@@ -230,7 +237,7 @@ void logGPS(void){
   }
 
   // Open the file to append new line
-  File file = SPIFFS.open(fileName.str().c_str(), FILE_APPEND);
+  File file = LittleFS.open(fileName.str().c_str(), FILE_APPEND);
   if(!file) {
     Serial.println("Failed to open file for appending");
     return;
@@ -302,6 +309,13 @@ void setup() {
 void loop() {
 
   currentLoopMillis = millis();
+
+   if (currentLoopMillis - previousSPIFFSLoopMillis > SPIFFS_CHECK_SPACE_TIME){
+    previousSPIFFSLoopMillis = currentLoopMillis;
+    totalBytes = LittleFS.totalBytes();
+    usedBytes = LittleFS.usedBytes();
+    freeBytes  = totalBytes - usedBytes;
+   }
 
   config.loop();
 
