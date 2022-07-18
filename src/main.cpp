@@ -55,7 +55,7 @@ SCD30 airSensor;
 #include <SoftwareSerial.h>
 #include <string.h>
 #include <sstream>
-// const int timeZoneoffset = 2; // Madrid UTC +2
+const int timeZoneoffset = 2; // Madrid UTC +2
 
 #ifndef GPS_RX_PIN
   #define GPS_RX_PIN 14 // Wemos D1 mini/pro RX to D6 
@@ -224,13 +224,12 @@ void displayNoData(){
 
 void logGPS(void){
   std::stringstream fileName;
-  // std::stringstream gpsLocation;
   char timeBuffer[16];
   
   lat = gps.location.lat();
   lng = gps.location.lng();
   gpsDate = gps.date.value();
-  gpsTime = gps.time.value();
+  gpsTime = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000;
   gpsSpeed = gps.speed.kmph();
 
   gpsSat = gps.satellites.value();
@@ -260,29 +259,10 @@ void logGPS(void){
     Serial.println("Failed to open file for appending");
     return;
   }
+
   // write file and position
-  // gpsLocation << (int)gps.date.year() << "," << (int)gps.date.month() << "," << (int)gps.date.day() << ","
-  //             << (int)gps.time.hour() << "," << (int)gps.time.minute() << "," << (int)gps.time.second() << ","
-  /*
-  gpsLocation << (int)gps.time.hour() << ":" << (int)gps.time.minute() << ":" << (int)gps.time.second() << ","
-              << (double)(gps.location.isValid()?lat:0.0f) << ","
-              << (double)(gps.location.isValid()?lng:0.0f) << ","
-              << (double)(gps.altitude.isValid()?gpsAltitude:0.0f) << ","
-              << (double)(gps.speed.isValid()?gpsSpeed:0.0f) << ","
-              << (double)(gps.hdop.isValid()?gpsHdop:0.0f) << ","
-              << (int)(gps.satellites.isValid()?gpsSat:0) << ","
-              << (double)(gps.course.isValid()?gpsCourse:0.0f) << ","
-              << (float)(power.vBatSense.mV/1000) << "," << (float)(power.vBusSense.mV/1000) << "," 
-              << (int)power.getPowerStatus() << "," << (int)power.getChargingStatus() << ","
-              << (uint16_t)co2 << "," << (float)temp << "," << (float)hum;
-              */
-  // file.println(gpsLocation.str().c_str());
-
-  // sprintf(timeBuffer, "%02u:%02u:%02u", gps.time.hour(), gps.time.minute(), gps.time.second());
-  // file.print(timeBuffer); file.print(",");
-
   String newLine;
-  newLine += String((uint32_t)gps.time.isValid()?(gpsTime + gps.time.age()/10):0) + ",";
+  newLine += String((uint32_t)gps.time.isValid()?gpsTime:0) + ",";
   newLine += String((double)gps.location.isValid()?lat:0.0f, 8) + ",";
   newLine += String((double)gps.location.isValid()?lng:0.0f, 8) + ",";
   newLine += String((double)gps.altitude.isValid()?gpsAltitude:0.0f, 1) + ",";
