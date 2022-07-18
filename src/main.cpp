@@ -38,6 +38,8 @@ String getMemoryUsageString(){
   // Serial.println(r);
   return r;}
 String getMemoryFree(){  return String(freeBytes);};
+String getVBat(){ return String((float)power.vBatSense.mV/1000,4);}
+String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 
 
 #include <PubSubClient.h>
@@ -184,9 +186,21 @@ void updateDisplay(void){
   display.print(co2);
 
   display.setTextSize(1);
+  display.setCursor(0, 40);
+  display.print("vBat:");
+  display.setCursor(30, 40);
+  display.print(String((float)power.vBatSense.mV/1000,3));
+
+  display.setTextSize(1);
   display.setCursor(0, 50);
+  display.print("vBus:");
+  display.setCursor(30, 50);
+  display.print(String((float)power.vBusSense.mV/1000,3));
+
+  display.setTextSize(1);
+  display.setCursor(70, 40);
   display.print("SAT:");
-  display.setCursor(25, 50);
+  display.setCursor(95, 40);
   display.print(gpsSat);
 
   display.setTextSize(1);
@@ -284,7 +298,8 @@ void setup() {
   config.addDashboardObject("RSSI", getRSSI);
   config.addDashboardObject("SPIFFS_Usage", getMemoryUsageString);
   config.addDashboardObject("SPIFFS_Free", getMemoryFree);
-
+  config.addDashboardObject("VBat", getVBat);
+  config.addDashboardObject("VBus", getVBus);
 
   mqttClient = config.getMQTTClient();
 
