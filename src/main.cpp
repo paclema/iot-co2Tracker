@@ -349,7 +349,8 @@ void loop() {
     // }
 
 
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid()){
+    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
+        && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
 
       logGPS();
 
@@ -406,8 +407,8 @@ void loop() {
     Serial.println();
 
     bool pubGPSdata = false;
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid()){
-
+    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
+        && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
       logGPS();
       pubGPSdata = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);

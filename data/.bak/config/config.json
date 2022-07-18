@@ -1,7 +1,7 @@
 {
   "network": {
     "AP_SSID": "iotco2Tracker",
-    "AP_password": "iotco2Tracker",
+    "AP_password": "iotco2Trackerpwd",
     "AP_channel": 6,
     "AP_SSID_hidden": false,
     "AP_max_connection": 4,
