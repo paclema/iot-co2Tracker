@@ -55,7 +55,7 @@ SCD30 airSensor;
 #include <SoftwareSerial.h>
 #include <string.h>
 #include <sstream>
-
+// const int timeZoneoffset = 2; // Madrid UTC +2
 
 #ifndef GPS_RX_PIN
   #define GPS_RX_PIN 14 // Wemos D1 mini/pro RX to D6 
@@ -224,7 +224,8 @@ void displayNoData(){
 
 void logGPS(void){
   std::stringstream fileName;
-  std::stringstream gpsLocation;
+  // std::stringstream gpsLocation;
+  char timeBuffer[16];
   
   lat = gps.location.lat();
   lng = gps.location.lng();
@@ -237,9 +238,12 @@ void logGPS(void){
   gpsHdop = gps.hdop.hdop();
   gpsCourse = gps.course.deg();
 
+  // setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+  // adjustTime(timeZoneoffset * SECS_PER_HOUR);
+
   updateDisplay();
   
-  // Create file if it ods not exists
+  // Create file if it does not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
   if( !LittleFS.exists( fileName.str().c_str()) ) {
     File file = LittleFS.open( fileName.str().c_str(), FILE_WRITE);
@@ -247,7 +251,7 @@ void logGPS(void){
       Serial.println("Failed to create file");
       return;
     }
-    file.println("year;month;day;hour;minute;second;latitude;longitude;altitude;speed;hdop;satellites;course;vBat;vBus;PowerStatus;ChargingStatus;co2;temp;hum");
+    file.println("time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerStatus,ChargingStatus,co2,temp,hum");
   }
 
   // Open the file to append new line
@@ -257,20 +261,43 @@ void logGPS(void){
     return;
   }
   // write file and position
-  gpsLocation << (int)gps.date.year() << ";" << (int)gps.date.month() << ";" << (int)gps.date.day() << ";"
-              << (int)gps.time.hour() << ";" << (int)gps.time.minute() << ";" << (int)gps.time.second() << ";"
-              << (double)(gps.location.isValid()?lat:0.0f) << ";"
-              << (double)(gps.location.isValid()?lng:0.0f) << ";"
-              << (double)(gps.altitude.isValid()?gpsAltitude:0.0f) << ";"
-              << (double)(gps.speed.isValid()?gpsSpeed:0.0f) << ";"
-              << (double)(gps.hdop.isValid()?gpsHdop:0.0f) << ";"
-              << (int)(gps.satellites.isValid()?gpsSat:0) << ";"
-              << (double)(gps.course.isValid()?gpsCourse:0.0f) << ";"
-              << (float)(power.vBatSense.mV/1000) << ";" << (float)(power.vBusSense.mV/1000) << ";" 
-              << (int)power.getPowerStatus() << ";" << (int)power.getChargingStatus() << ";"
-              << (uint16_t)co2 << ";" << (float)temp << ";" << (float)hum;
+  // gpsLocation << (int)gps.date.year() << "," << (int)gps.date.month() << "," << (int)gps.date.day() << ","
+  //             << (int)gps.time.hour() << "," << (int)gps.time.minute() << "," << (int)gps.time.second() << ","
+  /*
+  gpsLocation << (int)gps.time.hour() << ":" << (int)gps.time.minute() << ":" << (int)gps.time.second() << ","
+              << (double)(gps.location.isValid()?lat:0.0f) << ","
+              << (double)(gps.location.isValid()?lng:0.0f) << ","
+              << (double)(gps.altitude.isValid()?gpsAltitude:0.0f) << ","
+              << (double)(gps.speed.isValid()?gpsSpeed:0.0f) << ","
+              << (double)(gps.hdop.isValid()?gpsHdop:0.0f) << ","
+              << (int)(gps.satellites.isValid()?gpsSat:0) << ","
+              << (double)(gps.course.isValid()?gpsCourse:0.0f) << ","
+              << (float)(power.vBatSense.mV/1000) << "," << (float)(power.vBusSense.mV/1000) << "," 
+              << (int)power.getPowerStatus() << "," << (int)power.getChargingStatus() << ","
+              << (uint16_t)co2 << "," << (float)temp << "," << (float)hum;
+              */
+  // file.println(gpsLocation.str().c_str());
 
-  file.println(gpsLocation.str().c_str());
+  // sprintf(timeBuffer, "%02u:%02u:%02u", gps.time.hour(), gps.time.minute(), gps.time.second());
+  // file.print(timeBuffer); file.print(",");
+
+  String newLine;
+  newLine += String((uint32_t)gps.time.isValid()?(gpsTime + gps.time.age()/10):0) + ",";
+  newLine += String((double)gps.location.isValid()?lat:0.0f, 8) + ",";
+  newLine += String((double)gps.location.isValid()?lng:0.0f, 8) + ",";
+  newLine += String((double)gps.altitude.isValid()?gpsAltitude:0.0f, 1) + ",";
+  newLine += String((double)gps.speed.isValid()?gpsSpeed:0.0f, 3) + ",";
+  newLine += String((double)gps.hdop.isValid()?gpsHdop:0.0f, 2) + ",";
+  newLine += String((int)gps.satellites.isValid()?gpsSat:0) + ",";
+  newLine += String((double)gps.course.isValid()?gpsCourse:0, 1) + ",";
+  newLine += String((float)(power.vBatSense.mV/1000), 5) + ",";
+  newLine += String((float)(power.vBusSense.mV/1000), 5) + ",";
+  newLine += String((int)power.getPowerStatus()) + ",";
+  newLine += String((int)power.getChargingStatus()) + ",";
+  newLine += String((uint16_t)co2) + ",";
+  newLine += String((float)temp, 2) + ",";
+  newLine += String((float)hum, 2);
+  file.println(newLine.c_str());
   file.close();
 
 }
@@ -370,6 +397,7 @@ void loop() {
       logGPS();
 
       // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
+      // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
       // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
 
 
@@ -427,6 +455,7 @@ void loop() {
       logGPS();
       pubGPSdata = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
+        // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
     }
 
