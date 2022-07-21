@@ -88,7 +88,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
 
-
 //Main variables:
 uint16_t co2 = 0;
 float temp = 0;
