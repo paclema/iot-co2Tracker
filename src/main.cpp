@@ -82,6 +82,11 @@ SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
 #define SCREEN_ADDRESS 0x3C    //See datasheet for Address
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// TFT SPI screen
+#include <TFT_eSPI.h>
+#include <SPI.h>
+TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
+
 
 //Main variables:
 uint16_t co2 = 0;
@@ -213,6 +218,10 @@ void updateDisplay(void){
   display.print(gpsAltitude, 0);
 
   display.display();
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawFloat(power.vBatSense.mV/1000, 3, 160, 120, 6);
+
 }
 
 void displayNoData(){
@@ -323,6 +332,20 @@ void setup() {
   initGPS();
   delay(100);
   initSCD30();
+
+  tft.init();
+  tft.setRotation(0);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.fillScreen(TFT_BLACK);
+  tft.drawFloat(4658/1000, 3, 160, 120, 6);
+  // plotLinear("A00", 0, 160);
+  // plotLinear("A1", 1 * d, 160);
+  // plotLinear("A2", 2 * d, 160);
+  // plotLinear("A3", 3 * d, 160);
+  // plotLinear("A4", 4 * d, 160);
+  // plotLinear("A5", 5 * d, 160);
+  
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
   #endif
@@ -443,7 +466,7 @@ void loop() {
       logGPS();
       pubGPSdata = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
-        // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
+    // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
     }
 
