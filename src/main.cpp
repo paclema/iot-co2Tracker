@@ -224,6 +224,103 @@ void updateDisplay(void){
 
 }
 
+
+
+void updateTFT(void){
+  // display.clearDisplay();
+  // display.setCursor(0, 0);
+  // display.setTextSize(3);
+  // display.print(gpsSpeed);
+
+  // display.setCursor(75, 20);
+  // display.setTextSize(2);
+  // display.print("km/h");
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 30);
+  // display.print("Co2:");
+  // display.setCursor(25, 30);
+  // display.print(co2);
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 40);
+  // display.print("vBat:");
+  // display.setCursor(30, 40);
+  // display.print(String((float)power.vBatSense.mV/1000,3));
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 50);
+  // display.print("vBus:");
+  // display.setCursor(30, 50);
+  // display.print(String((float)power.vBusSense.mV/1000,3));
+
+  // display.setTextSize(1);
+  // display.setCursor(70, 40);
+  // display.print("SAT:");
+  // display.setCursor(95, 40);
+  // display.print(gpsSat);
+
+  // display.setTextSize(1);
+  // display.setCursor(70, 50);
+  // display.print("ALT:");
+  // display.setCursor(95, 50);
+  // display.print(gpsAltitude, 0);
+
+  // display.display();
+
+
+  /*
+  TL_DATUM = Top left
+  TC_DATUM = Top centre
+  TR_DATUM = Top right
+  ML_DATUM = Middle left
+  MC_DATUM = Middle centre
+  MR_DATUM = Middle right
+  BL_DATUM = Bottom left
+  BC_DATUM = Bottom centre
+  BR_DATUM = Bottom right*/
+
+  // tft.fillScreen(TFT_BLACK);
+  // tft.drawString("Speed:", 20, 20,4);
+  // tft.drawFloat(gpsSpeed, 3, 120, 20, 4);
+  tft.drawString("Speed: " + String(gpsSpeed), 20, 20,4);
+
+  tft.drawString("Co2: " + String(co2), 20, 50,4);
+  // tft.drawFloat(co2, 100, 100, 4);
+
+  tft.drawString("vBat: " + String(power.vBatSense.mV/1000,3), 20, 80,4);
+  // tft.drawFloat(power.vBatSense.mV/1000, 3, 40, 120, 5);
+
+    // Find centre of screen
+  // uint16_t x = tft.width()/2;
+  // uint16_t y = tft.height()/2;
+
+  // Set datum to Middle Right
+  // tft.setTextDatum(MR_DATUM);
+
+  // Set the padding to the maximum width that the digits could occupy in font 4
+  // This ensures small numbers obliterate large ones on the screen
+  // tft.setTextPadding( tft.textWidth("-88.88", 4) );
+
+  // Creat a random signed floating point number in range -15 to +15
+  // float fpn = random(91)/3.0 - 15.0;
+
+  // Draw a floating point number with 2 decimal places with right datum in font 4
+  // tft.drawFloat( fpn, 2, x, y, 4);
+
+  // Reset text padding to 0 otherwise all future rendered strings will use it!
+  // tft.setTextPadding(0);
+  
+  // Set datum to Middle Left
+  // tft.setTextDatum(ML_DATUM);
+
+  // Draw text with left datum in font 4
+  // tft.drawString(" Units", x, y, 4);
+
+Serial.println("Updating TFT");
+}
+
+
 void displayNoData(){
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
@@ -252,7 +349,8 @@ void logGPS(void){
   // setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
   // adjustTime(timeZoneoffset * SECS_PER_HOUR);
 
-  updateDisplay();
+  // updateDisplay();
+  updateTFT();
   
   // Create file if it does not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
@@ -334,11 +432,14 @@ void setup() {
   initSCD30();
 
   tft.init();
-  tft.setRotation(0);
+  // tft.setRotation(3);
+  tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.fillScreen(TFT_BLACK);
-  tft.drawFloat(4658/1000, 3, 160, 120, 6);
+  // tft.drawFloat(4658/1000, 3, 160, 120, 6);
+  tft.drawString("Starting...", 20, 20,4);
+  delay(1000);
   // plotLinear("A00", 0, 160);
   // plotLinear("A1", 1 * d, 160);
   // plotLinear("A2", 2 * d, 160);
@@ -402,7 +503,7 @@ void loop() {
     // }
 
 
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
+    if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
         && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
 
       logGPS();
@@ -461,15 +562,19 @@ void loop() {
     Serial.println();
 
     bool pubGPSdata = false;
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
+    if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
         && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
       logGPS();
       pubGPSdata = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
     // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
+    } else {
+    updateTFT();
+    Serial.println("Failed logGPS while CO2 measurement");
     }
 
+    updateTFT();
 
     if(mqttClient->connected()) {
 
