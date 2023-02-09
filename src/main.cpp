@@ -123,7 +123,7 @@ void initSCD30(void){
   //Start sensor using the Wire port and enable the auto-calibration (ASC)
   if (airSensor.begin(Wire, true) == false)
   {
-      Serial.println("Air sensor not detected. Please check wiring. Freezing...");
+      log_e("Air sensor not detected. Please check wiring. Freezing...");
       // while (1)
       //     ;
   }
@@ -163,7 +163,7 @@ void initSCD30(void){
 
 void initOLED(void){
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
-    Serial.println(F("SSD1306 allocation failed"));
+    log_w(F("SSD1306 allocation failed"));
     // for (;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
@@ -357,16 +357,17 @@ void logGPS(void){
   if( !LittleFS.exists( fileName.str().c_str()) ) {
     File file = LittleFS.open( fileName.str().c_str(), FILE_WRITE);
     if(!file){
-      Serial.println("Failed to create file");
+      log_e("Failed to create file %s", fileName.str().c_str());
       return;
     }
+    log_i("Created log file %s", fileName.str().c_str());
     file.println("time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerStatus,ChargingStatus,co2,temp,hum");
   }
 
   // Open the file to append new line
   File file = LittleFS.open(fileName.str().c_str(), FILE_APPEND);
   if(!file) {
-    Serial.println("Failed to open file for appending");
+    log_e("Failed to open file %s for appending", fileName.str().c_str());
     return;
   }
 
@@ -570,7 +571,7 @@ void loop() {
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
     } else {
     updateTFT();
-    Serial.println("Failed logGPS while CO2 measurement");
+    log_e("Failed logGPS while CO2 measurement");
     }
 
     updateTFT();
