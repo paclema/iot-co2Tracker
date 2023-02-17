@@ -84,6 +84,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #include <SPI.h>
 TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
+#include "loraFunctions.h"
+
 
 //Main variables:
 uint16_t co2 = 0;
@@ -407,6 +409,8 @@ void setup() {
   #endif
 
   config.begin();
+
+  loraSetup();
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
@@ -465,6 +469,9 @@ void loop() {
    }
 
   config.loop();
+
+  loraLoop();
+
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
