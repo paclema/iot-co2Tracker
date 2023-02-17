@@ -67,7 +67,7 @@ const int timeZoneoffset = 2; // Madrid UTC +2
   #define GPS_TX_PIN 12 // Wemos D1 mini/pro TX to D5 
 #endif
 
-#define GPS_DATA_PUBLISH_TIME 1000
+#define GPS_DATA_PUBLISH_TIME 10000
 
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
@@ -87,13 +87,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #include <SPI.h>
 TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
-#include "loraFunctions.h"
 
 
 //Main variables:
 uint16_t co2 = 0;
 float temp = 0;
 float hum = 0;
+bool airSensorFirstMeasurement = false;
 
 double lat = 0;
 double lng = 0;
@@ -114,6 +114,73 @@ StaticJsonDocument<256> doc;
 unsigned long lastGPSPublish = 0UL;
 
 
+//Lora and TTN
+//------------
+#include "loraFunctions.h"
+#include <lmic.h>
+#include <CayenneLPP.h>
+#define CAYENNE_MAX_PAYLOAD_SIZE    64
+CayenneLPP lpp(CAYENNE_MAX_PAYLOAD_SIZE);
+
+
+void publish2TTN(void){
+    
+    // Check if there is not a current TX/RX job running
+    if (LMIC.opmode & OP_TXRXPEND) {
+        Serial.printf("*** OP_TXRXPEND, not sending\n");
+    } else {
+        // Prepare upstream data transmission at the next possible time.
+
+
+        lpp.reset();
+
+        // lpp.addAnalogInput(1, (float)wakeUpGPIO);
+        // lpp.addAnalogInput(2, (float)bootCount);
+
+        // lpp.addVoltage(1, power.vBatSense.mV/1000:F); //VCC
+        lpp.addVoltage(2, power.vBatSense.mV/1000.F); //vBat
+        lpp.addVoltage(3, power.vBusSense.mV/1000.F); //vBus
+
+
+        // CO2 sensor:
+        //------------
+        // if(airSensor.dataAvailable()){
+        //   lpp.addConcentration(1, (uint32_t)airSensor.getCO2());
+        //   lpp.addTemperature(1, airSensor.getTemperature());
+        //   lpp.addRelativeHumidity(1, airSensor.getHumidity());
+        // }
+        if(airSensorFirstMeasurement){
+          lpp.addConcentration(1, (uint32_t)co2);
+          lpp.addTemperature(1, temp);
+          lpp.addRelativeHumidity(1, hum);
+        }
+
+
+        // GPS sensor:
+        //------------
+        if(gps.location.isValid() && gps.altitude.isValid()) lpp.addGPS(1, gps.location.lat(), gps.location.lng(), gps.altitude.meters());
+        if(gps.speed.isValid()) lpp.addGenericSensor(1, gps.speed.kmph());
+        if(gps.satellites.isValid()) lpp.addGenericSensor(2, gps.satellites.value());
+        if(gps.hdop.isValid()) lpp.addPercentage(1, gps.hdop.hdop());
+        if(gps.course.isValid()) lpp.addDirection(1, (float)gps.course.deg());
+        if(gps.time.isValid()) lpp.addUnixTime(1, gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000);
+
+
+
+        LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
+
+        Serial.printf("*** Packet queued:\n");
+        DynamicJsonDocument jsonBuffer(1024);
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        lpp.decodeTTN(lpp.getBuffer(), lpp.getSize(), root);
+        serializeJsonPretty(root, Serial);
+        Serial.println();
+
+        // LMIC_setTxData2(1, mydataPostbox, sizeof(mydataPostbox)-1, 0);
+        // Serial.printf("*** Packet queued: %s\n", mydataPostbox);
+    }
+    // Next TX is scheduled after TX_COMPLETE event.
+}
 
 
 
@@ -510,6 +577,7 @@ void loop() {
     //   Serial.printf("---> NEW GPS speed: %lf\n", gps.speed.kmph());
     // }
 
+    publish2TTN();
 
     if ( gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() ){
 
@@ -559,6 +627,7 @@ void loop() {
     co2 = airSensor.getCO2();
     temp = airSensor.getTemperature();
     hum = airSensor.getHumidity();
+    airSensorFirstMeasurement = true;
     
     Serial.print("co2(ppm):");
     Serial.print(co2);
@@ -570,7 +639,8 @@ void loop() {
 
     bool pubGPSdata = false;
     if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
-        && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
+        // && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
+      	){
       logGPS();
       pubGPSdata = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);

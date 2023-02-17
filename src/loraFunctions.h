@@ -211,7 +211,7 @@ void onEvent (ev_t ev) {
 
 void loraSetup(){
 
-	log_e("Setting up lora...");
+	log_d("Setting up lora...");
 	// LMIC init
   	os_init_ex(&myPinmap);
 
@@ -233,7 +233,7 @@ void loraSetup(){
     // Start job (sending automatically starts OTAA too)
     // do_send(&sendjob);
 
-	log_e("Setting up lora done");
+	log_d("Setting up lora done");
 
 
 }
