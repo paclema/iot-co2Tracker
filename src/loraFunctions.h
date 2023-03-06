@@ -16,7 +16,7 @@ static const u1_t PROGMEM APPEUI[8]={ PASTE_LSB };
 void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
-static const u1_t PROGMEM DEVEUI[8]={ PASTE_MSB };
+static const u1_t PROGMEM DEVEUI[8]={ PASTE_LSB };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
@@ -30,7 +30,7 @@ static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 10;
 
 char TTN_response[30];
 
@@ -228,7 +228,7 @@ void loraSetup(){
     // Set data rate and transmit power for uplink
     // Set the data rate to Spreading Factor 7.  This is the fastest supported rate for 125 kHz channels, and it
     // minimizes air time and battery power. Set the transmission power to 14 dBi (25 mW).
-    LMIC_setDrTxpow(DR_SF7,14);
+    // LMIC_setDrTxpow(DR_SF7,14);
 
     // Start job (sending automatically starts OTAA too)
     // do_send(&sendjob);
