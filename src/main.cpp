@@ -158,7 +158,10 @@ void publish2TTN(void){
 
         // GPS sensor:
         //------------
-        if(gps.location.isValid() && gps.altitude.isValid()) lpp.addGPS(1, gps.location.lat(), gps.location.lng(), gps.altitude.meters());
+        if(gps.location.isValid() && gps.altitude.isValid()){
+          lpp.addGPS(1, float(gps.location.lat()), float(gps.location.lng()), float(gps.altitude.meters()));
+          Serial.printf("GPS lat: %lf lng: %lf\n", gps.location.lat(),  gps.location.lng());
+        }
         if(gps.speed.isValid()) lpp.addGenericSensor(1, gps.speed.kmph());
         if(gps.satellites.isValid()) lpp.addGenericSensor(2, gps.satellites.value());
         if(gps.hdop.isValid()) lpp.addPercentage(1, gps.hdop.hdop());
@@ -167,7 +170,21 @@ void publish2TTN(void){
 
 
 
-        LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
+
+        // Serial.printf("lpp buffer: %.*s\n", lpp.getSize(), (char*)lpp.getBuffer());
+        uint8_t *payload = lpp.getBuffer();
+
+        char buffer[128];
+        String payloadString;
+
+        for (int i = 0; i < lpp.getSize(); i++) {
+        sprintf(buffer, "%02x", payload[i]);
+        payloadString += buffer;
+        }
+        Serial.print("HEX: ");
+        Serial.print(payloadString);
+        Serial.print(" | SIZE: ");
+        Serial.println(payloadString.length());
 
         Serial.printf("*** Packet queued:\n");
         DynamicJsonDocument jsonBuffer(1024);
@@ -176,6 +193,7 @@ void publish2TTN(void){
         serializeJsonPretty(root, Serial);
         Serial.println();
 
+        LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
         // LMIC_setTxData2(1, mydataPostbox, sizeof(mydataPostbox)-1, 0);
         // Serial.printf("*** Packet queued: %s\n", mydataPostbox);
     }
