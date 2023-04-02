@@ -34,6 +34,12 @@ const unsigned TX_INTERVAL = 10;
 
 char TTN_response[30];
 
+
+#include <CayenneLPP.h>
+#define CAYENNE_MAX_PAYLOAD_SIZE    64
+CayenneLPP lpp(CAYENNE_MAX_PAYLOAD_SIZE);
+
+
 class MyHalConfig_t : public Arduino_LMIC::HalConfiguration_t {
 
 public:
@@ -241,4 +247,84 @@ void loraSetup(){
 void loraLoop() {
     os_runloop_once();
 }
+
+void publish2TTN(void){
+    
+    // Check if there is not a current TX/RX job running
+    if (LMIC.opmode & OP_TXRXPEND) {
+        Serial.printf("*** OP_TXRXPEND, not sending\n");
+    } else {
+        // Prepare upstream data transmission at the next possible time.
+
+
+        lpp.reset();
+
+        // lpp.addAnalogInput(1, (float)wakeUpGPIO);
+        // lpp.addAnalogInput(2, (float)bootCount);
+
+        // lpp.addVoltage(1, power.vBatSense.mV/1000:F); //VCC
+        lpp.addVoltage(2, power.vBatSense.mV/1000.F); //vBat
+        lpp.addVoltage(3, power.vBusSense.mV/1000.F); //vBus
+
+
+        // CO2 sensor:
+        //------------
+        // if(airSensor.dataAvailable()){
+        //   lpp.addConcentration(1, (uint32_t)airSensor.getCO2());
+        //   lpp.addTemperature(1, airSensor.getTemperature());
+        //   lpp.addRelativeHumidity(1, airSensor.getHumidity());
+        // }
+        if(airSensorFirstMeasurement){
+          lpp.addConcentration(1, (uint32_t)co2);
+          lpp.addTemperature(1, temp);
+          lpp.addRelativeHumidity(1, hum);
+        }
+
+
+        // GPS sensor:
+        //------------
+        if(gps.location.isValid() && gps.altitude.isValid()){
+          lpp.addGPS(1, float(gps.location.lat()), float(gps.location.lng()), float(gps.altitude.meters()));
+          Serial.printf("GPS lat: %lf lng: %lf\n", gps.location.lat(),  gps.location.lng());
+        }
+        if(gps.speed.isValid()) lpp.addGenericSensor(1, gps.speed.kmph());
+        if(gps.satellites.isValid()) lpp.addGenericSensor(2, gps.satellites.value());
+        if(gps.hdop.isValid()) lpp.addPercentage(1, gps.hdop.hdop());
+        if(gps.course.isValid()) lpp.addDirection(1, (float)gps.course.deg());
+        if(gps.time.isValid()) lpp.addUnixTime(1, gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000);
+
+
+
+
+        // Serial.printf("lpp buffer: %.*s\n", lpp.getSize(), (char*)lpp.getBuffer());
+        uint8_t *payload = lpp.getBuffer();
+
+        char buffer[128];
+        String payloadString;
+
+        for (int i = 0; i < lpp.getSize(); i++) {
+        sprintf(buffer, "%02x", payload[i]);
+        payloadString += buffer;
+        }
+        Serial.print("HEX: ");
+        Serial.print(payloadString);
+        Serial.print(" | SIZE: ");
+        Serial.println(payloadString.length());
+
+        Serial.printf("*** Packet queued:\n");
+        DynamicJsonDocument jsonBuffer(1024);
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        lpp.decodeTTN(lpp.getBuffer(), lpp.getSize(), root);
+        serializeJsonPretty(root, Serial);
+        Serial.println();
+
+        LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
+        // LMIC_setTxData2(1, mydataPostbox, sizeof(mydataPostbox)-1, 0);
+        // Serial.printf("*** Packet queued: %s\n", mydataPostbox);
+    }
+    // Next TX is scheduled after TX_COMPLETE event.
+}
+
+
+
 #endif
