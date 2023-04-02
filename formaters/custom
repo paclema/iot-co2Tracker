@@ -1,0 +1,53 @@
+function decodeUplink(input) {
+  var data = {};
+  var bytes = input.bytes;
+  
+  // Decode latitude
+  var latitudeBinary = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
+  data.latitude = ((latitudeBinary / 16777215.0) * 180.0) - 90.0;
+  
+  // Decode longitude
+  var longitudeBinary = (bytes[4] << 24) + (bytes[5] << 16) + (bytes[6] << 8) + bytes[7];
+  data.longitude = ((longitudeBinary / 16777215.0) * 360.0) - 180.0;
+  
+  // Decode altitude
+  data.altitude = (bytes[8] << 8) + bytes[9];
+  
+  // Decode HDOP
+  data.hdop = (bytes[10] << 8) + bytes[11];
+  
+  // Decode GPS speed
+  var gpsSpeedInt = (bytes[12] << 8) + bytes[13];
+  data.gpsSpeed = gpsSpeedInt / 10.0;
+  
+  // Decode GPS satellites
+  data.gpsSatellites = bytes[14];
+  
+  // Decode GPS course
+  data.gpsCourse = (bytes[15] << 8) + bytes[16];
+  
+  // Decode GPS time
+  var gpsTime = (bytes[17] << 24) + (bytes[18] << 16) + (bytes[19] << 8) + bytes[20];
+  data.gpsTime = new Date(gpsTime / 1000);
+  
+  // Decode battery voltage
+  data.batteryVoltage = (bytes[21] << 8) + bytes[22];
+  
+  // Decode bus voltage
+  data.busVoltage = (bytes[23] << 8) + bytes[24];
+  
+  // Decode CO2
+  data.co2 = (bytes[25] << 8) + bytes[26];
+  
+  // Decode temperature
+  var tempUint = (bytes[27] << 8) + bytes[28];
+  data.temperature = tempUint / 1000000.0;
+  
+  // Decode humidity
+  var humUint = (bytes[29] << 8) + bytes[30];
+  data.humidity = humUint / 1E12;
+  
+  return {
+    data: data,
+  };
+}
