@@ -248,7 +248,7 @@ void loraLoop() {
     os_runloop_once();
 }
 
-void publish2TTN(void){
+void publish2TTNCayenne(void){
     
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
@@ -326,5 +326,140 @@ void publish2TTN(void){
 }
 
 
+void publish2TTN(void){
+    
+    // Check if there is not a current TX/RX job running
+    if (LMIC.opmode & OP_TXRXPEND) {
+        Serial.printf("*** OP_TXRXPEND, not sending\n");
+    } else {
+        // Prepare upstream data transmission at the next possible time.
+        int index = 0;
+
+
+        // float vBat = power.vBatSense.mV/1000.F;
+        // float vBus = power.vBusSense.mV/1000.F;
+
+        // CO2 sensor:
+        //------------
+        // uint16_t co2 = co2;
+        // float temp = temp;
+        // float hum = hum;
+
+        // GPS sensor:
+        //------------
+        // double lat = gps.location.lat();
+        // double lng = gps.location.lng();
+        // double altitude = gps.altitude.meters();
+        // double gpsSpeed = gps.speed.kmph();
+        // uint32_t gpsSat = gps.satellites.value();
+        // double gpsHdop = gps.hdop.hdop();
+        // double gpsCourse = gps.course.deg();
+        // uint32_t gpsTime = gps.time.value() + gps.time.age() / 10 + timeZoneoffset * 1000000;
+
+        /*
+        uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
+        uint32_t longitudeBinary = ((gps.location.lng() + 180) / 360.0) * 16777215;
+  
+
+        payload[0] = (latitudeBinary >> 16) & 0xFF;
+        payload[1] = (latitudeBinary >> 8) & 0xFF;
+        payload[2] = latitudeBinary & 0xFF;
+
+        payload[3] = (longitudeBinary >> 16) & 0xFF;
+        payload[4] = (longitudeBinary >> 8) & 0xFF;
+        payload[5] = longitudeBinary & 0xFF;
+
+        uint16_t altitudeGps = gps.altitude.meters();
+        payload[6] = (altitudeGps >> 8) & 0xFF;
+        payload[7] = altitudeGps & 0xFF;
+
+        uint8_t hdopGps = gps.hdop.hdop()/10;
+        payload[8] = hdopGps & 0xFF;
+
+        */
+
+        // uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
+        uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
+        payload[index++] = (latitudeBinary >> 24) & 0xFF;
+        payload[index++] = (latitudeBinary >> 16) & 0xFF;
+        payload[index++] = (latitudeBinary >> 8) & 0xFF;
+        payload[index++] = latitudeBinary & 0xFF;
+
+        uint32_t longitudeBinary = ((gps.location.lng() + 180) / 360.0) * 16777215;
+        payload[index++] = (longitudeBinary >> 24) & 0xFF;
+        payload[index++] = (longitudeBinary >> 16) & 0xFF;
+        payload[index++] = (longitudeBinary >> 8) & 0xFF;
+        payload[index++] = longitudeBinary & 0xFF;
+
+        uint16_t altitudeGps = gps.altitude.meters();
+        payload[index++] = (altitudeGps >> 8) & 0xFF;
+        payload[index++] = altitudeGps & 0xFF;
+
+        uint16_t hdopGps = gps.hdop.hdop();
+        payload[index++] = (hdopGps >> 8) & 0xFF;
+        payload[index++] = hdopGps & 0xFF;
+
+
+        double gpsSpeed = gps.speed.kmph();
+        uint16_t gpsSpeedInt = gpsSpeed*10;
+        payload[index++] = (gpsSpeedInt >> 8) & 0xFF;
+        payload[index++] = gpsSpeedInt & 0xFF;
+
+
+        uint8_t gpsSat8 = (uint8_t)(gps.satellites.value() & 0xFF); // Tomamos los 8 bits menos significativos
+        payload[index++] = gpsSat8;
+
+        uint16_t gpsCourse = gps.course.deg();
+        payload[index++] = (gpsCourse >> 8) & 0xFF;
+        payload[index++] = gpsCourse & 0xFF;
+
+        uint32_t gpsTime = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000;
+        payload[index++] = (gpsTime >> 24) & 0xFF;
+        payload[index++] = (gpsTime >> 16) & 0xFF;
+        payload[index++] = (gpsTime >> 8) & 0xFF;
+        payload[index++] = gpsTime & 0xFF;
+
+
+        uint16_t vBat = power.vBatSense.mV;
+        payload[index++] = (vBat >> 8) & 0xFF;
+        payload[index++] = vBat & 0xFF;
+
+        uint16_t vBus = power.vBusSense.mV;
+        payload[index++] = (vBus >> 8) & 0xFF;
+        payload[index++] = vBus & 0xFF;
+
+        payload[index++] = (co2 >> 8) & 0xFF;
+        payload[index++] = co2 & 0xFF;
+
+
+        uint16_t tempUint = (uint16_t)(temp * 1000000);     // 6 decimals. Max number: 65535.999984
+        payload[index++] = (tempUint >> 8) & 0xFF;
+        payload[index++] = tempUint & 0xFF;
+
+
+        uint16_t humUint = (uint16_t)(hum * 1E12);     // 6 decimals. Max number: 65535.999984
+        payload[index++] = (humUint >> 8) & 0xFF;
+        payload[index++] = humUint & 0xFF;
+
+
+        LMIC_setTxData2(1, payload, index, 0);
+        Serial.print("Packet queued: size=");
+        Serial.println(index);
+
+
+        // Generate payload from message:
+
+
+        // Print the payload and its size to the serial port
+        Serial.print("Payload: ");
+        for (int i = 0; i < sizeof(payload); i++) {
+            Serial.print(payload[i], HEX);
+            Serial.print(" ");
+        }
+
+
+    }
+    // Next TX is scheduled after TX_COMPLETE event.
+}
 
 #endif
