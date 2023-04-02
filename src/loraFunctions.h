@@ -27,6 +27,7 @@ void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 static uint8_t mydata[] = "Hello, world from an iot-postbox_v1 board!";
 static osjob_t sendjob;
+uint8_t payload[32];
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
