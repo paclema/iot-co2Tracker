@@ -379,7 +379,6 @@ void publish2TTN(void){
 
         */
 
-        // uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
         uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
         payload[index++] = (latitudeBinary >> 24) & 0xFF;
         payload[index++] = (latitudeBinary >> 16) & 0xFF;
@@ -402,19 +401,19 @@ void publish2TTN(void){
 
 
         double gpsSpeed = gps.speed.kmph();
-        uint16_t gpsSpeedInt = gpsSpeed*10;
+        uint16_t gpsSpeedInt = gpsSpeed*100;
         payload[index++] = (gpsSpeedInt >> 8) & 0xFF;
         payload[index++] = gpsSpeedInt & 0xFF;
 
 
-        uint8_t gpsSat8 = (uint8_t)(gps.satellites.value() & 0xFF); // Tomamos los 8 bits menos significativos
+        uint8_t gpsSat8 = (uint8_t)(gps.satellites.value() & 0xFF);
         payload[index++] = gpsSat8;
 
         uint16_t gpsCourse = gps.course.deg();
         payload[index++] = (gpsCourse >> 8) & 0xFF;
         payload[index++] = gpsCourse & 0xFF;
 
-        uint32_t gpsTime = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000;
+        uint32_t gpsTime = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000; // Raw time in HHMMSSCC format (u32)
         payload[index++] = (gpsTime >> 24) & 0xFF;
         payload[index++] = (gpsTime >> 16) & 0xFF;
         payload[index++] = (gpsTime >> 8) & 0xFF;
@@ -433,12 +432,12 @@ void publish2TTN(void){
         payload[index++] = co2 & 0xFF;
 
 
-        uint16_t tempUint = (uint16_t)(temp * 1000000);     // 6 decimals. Max number: 65535.999984
+        uint16_t tempUint = (uint16_t)(temp * 100);  // 2 decimals. Max number: 655.35
         payload[index++] = (tempUint >> 8) & 0xFF;
         payload[index++] = tempUint & 0xFF;
 
 
-        uint16_t humUint = (uint16_t)(hum * 1E12);     // 6 decimals. Max number: 65535.999984
+        uint16_t humUint = (uint16_t)(hum * 100);  // 2 decimals. Max number: 655.35
         payload[index++] = (humUint >> 8) & 0xFF;
         payload[index++] = humUint & 0xFF;
 
