@@ -528,7 +528,7 @@ void loop() {
         doc["altitude"] = gpsAltitude;
         doc["hdop"] = gpsHdop;
         doc["course"] = gpsCourse;
-        doc["wifiSta_rssi"] = WiFi.RSSI();
+        doc["rssi_STA"] = WiFi.RSSI();
         #ifdef ARDUINO_IOTPOSTBOX_V1
         doc["vBat"] = (float)power.vBatSense.mV/1000;
         doc["vBus"] = (float)power.vBusSense.mV/1000;
@@ -599,7 +599,7 @@ void loop() {
         doc["hdop"] = gpsHdop;
         doc["course"] = gpsCourse;
       }
-      doc["wifiSta_rssi"] = WiFi.RSSI();
+      doc["rssi_STA"] = WiFi.RSSI();
       #ifdef ARDUINO_IOTPOSTBOX_V1
       doc["vBat"] = (float)power.vBatSense.mV/1000;
       doc["vBus"] = (float)power.vBusSense.mV/1000;
