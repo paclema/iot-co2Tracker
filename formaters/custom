@@ -46,6 +46,12 @@ function decodeUplink(input) {
   var humUint = (bytes[29] << 8) + bytes[30];
   data.humidity = humUint / 100.0;
   
+  // Decode powerStatus
+  data.powerStatus = bytes[31];
+
+  // Decode chargingStatus
+  data.chargingStatus = bytes[32];
+
   return {
     data: data,
   };

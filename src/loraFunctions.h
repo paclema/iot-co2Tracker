@@ -27,7 +27,7 @@ void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 static uint8_t mydata[] = "Hello, world from an iot-postbox_v1 board!";
 static osjob_t sendjob;
-uint8_t payload[32];
+uint8_t payload[34];
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
@@ -440,7 +440,9 @@ void publish2TTN(void){
         uint16_t humUint = (uint16_t)(hum * 100);  // 2 decimals. Max number: 655.35
         payload[index++] = (humUint >> 8) & 0xFF;
         payload[index++] = humUint & 0xFF;
-
+        
+        payload[index++] = (uint8_t)power.getPowerStatus();
+        payload[index++] = (uint8_t)power.getChargingStatus();
 
         LMIC_setTxData2(1, payload, index, 0);
         Serial.print("Packet queued: size=");
