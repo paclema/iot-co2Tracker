@@ -9,7 +9,13 @@ function decodeUplink(input) {
   // Decode longitude
   var longitudeBinary = (bytes[4] << 24) + (bytes[5] << 16) + (bytes[6] << 8) + bytes[7];
   data.longitude = ((longitudeBinary / 16777215.0) * 360.0) - 180.0;
-  
+
+  // Check if latitude and longitude values are valid, otherwise set them to null
+  if (Math.abs(data.latitude) < 0.1 || Math.abs(data.longitude) < 0.1) {
+    data.latitude = null;
+    data.longitude = null;
+  }
+
   // Decode altitude
   data.altitude = (bytes[8] << 8) + bytes[9];
   
