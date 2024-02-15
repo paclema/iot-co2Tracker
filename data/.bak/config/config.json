@@ -77,6 +77,11 @@
       "daylight_offset_sec": 3600
     }
   },
+  "co2Tracker": {
+    "local_logs": true,
+    "publish_gps_data": false,
+    "publish_lorawan": false
+  },
   "device": {
     "track_restart_counter": true,
     "loop_time_ms": 100,
