@@ -88,23 +88,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
 
-<<<<<<< HEAD
-=======
-class co2TrackerConfig : public IWebConfig {
-public:
-  bool localLogs = false;
-  bool publishGPSdata = false;
-  bool publishLoraWan = false;
-  void parseWebConfig(JsonObjectConst configObject){
-    localLogs = configObject["localLogs"] | false;
-    publishGPSdata = configObject["publishGPSdata"] | false;
-    publishLoraWan = configObject["publishLoraWan"] | false;
-  }
-}
-
-co2TrackerConfig co2TrackerConfig;
-
->>>>>>> de187d6 (Add co2Tracker configuration options to log or enable publish data)
 //Main variables:
 uint16_t co2 = 0;
 float temp = 0;
@@ -429,17 +412,20 @@ void setup() {
   digitalWrite(LDO2_EN_PIN, HIGH);
   power.setup();
   #endif
+  
+  co2Tracker = new Co2Tracker();
+  co2Tracker->setMQTTClient(config.getMQTTClient());
+  
+  config.addConfig(co2Tracker, "co2Tracker");
 
-  config.addConfig(&co2TrackerConfig, "co2Tracker");
   config.begin();
+  topic = config.getDeviceTopic() + "data";
+  mqttClient = config.getMQTTClient();
 
   loraSetup();
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
-  config.addDashboardObject("RSSI", getRSSI);
-  config.addDashboardObject("SPIFFS_Usage", getMemoryUsageString);
-  config.addDashboardObject("SPIFFS_Free", getMemoryFree);
   config.addDashboardObject("VBat", getVBat);
   config.addDashboardObject("VBus", getVBus);
 
@@ -473,11 +459,6 @@ void setup() {
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
   #endif
-
-  topic = config.getDeviceTopic() + "data";
-
-  co2Tracker = new Co2Tracker();
-  co2Tracker->setMQTTClient(config.getMQTTClient());
 
   Serial.println("###  Looping time\n");
 
@@ -528,11 +509,11 @@ void loop() {
     //   Serial.printf("---> NEW GPS speed: %lf\n", gps.speed.kmph());
     // }
 
-    if(co2TrackerConfig.publishLoraWan) publish2TTN();
+    if(co2Tracker->publishLoraWan) publish2TTN();
 
     if ( gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() ){
 
-      if(co2TrackerConfig.localLogs) logGPS();
+      if(co2Tracker->localLogs) logGPS();
 
       // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
       // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
@@ -613,7 +594,7 @@ void loop() {
       doc["temp"] = temp;
       doc["humidity"] = hum;
 
-      if(GPSdataValid && co2TrackerConfig.publishGPSdata){
+      if(GPSdataValid && co2Tracker->publishGPSdata){
         doc["lat"] = lat;
         doc["lng"] = lng;
         doc["date"] = gpsDate;
