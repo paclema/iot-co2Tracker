@@ -45,6 +45,9 @@ String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 #include <MQTTClient.h>
 MQTTClient *mqttClient;
 
+#include <Co2Tracker.h>
+Co2Tracker* co2Tracker = nullptr;
+
 // Co2 sensor
 #include <Wire.h>
 #include "SparkFun_SCD30_Arduino_Library.h"
@@ -285,7 +288,9 @@ void logGPS(void){
 
 
 void setup() {
+  // esp_log_level_set("i2c.master", ESP_LOG_NONE);
   Serial.begin(115200);
+  delay(8000);
   
   #ifdef ENABLE_SERIAL_DEBUG
     Serial.setDebugOutput(true);
@@ -323,6 +328,9 @@ void setup() {
   #endif
 
   topic = config.getDeviceTopic() + "data";
+
+  co2Tracker = new Co2Tracker();
+  co2Tracker->setMQTTClient(config.getMQTTClient());
 
   Serial.println("###  Looping time\n");
 
