@@ -42,8 +42,8 @@ String getVBat(){ return String((float)power.vBatSense.mV/1000,4);}
 String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 
 
-#include <PubSubClient.h>
-PubSubClient * mqttClient;
+#include <MQTTClient.h>
+MQTTClient *mqttClient;
 
 // Co2 sensor
 #include <Wire.h>
@@ -404,7 +404,7 @@ void loop() {
         #endif
 
         serializeJson(doc, msg_pub);
-        mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
+        // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
         mqttClient->publish(topic.c_str(), msg_pub.c_str());
         // Serial.println(msg_pub);
       }
@@ -468,7 +468,7 @@ void loop() {
       doc["ChargingStatus"] = (int)power.getChargingStatus();
       #endif
       serializeJson(doc, msg_pub);
-      mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
+      // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
       mqttClient->publish(topic.c_str(), msg_pub.c_str());
       // Serial.println(msg_pub);
 
