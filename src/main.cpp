@@ -42,8 +42,11 @@ String getVBat(){ return String((float)power.vBatSense.mV/1000,4);}
 String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 
 
-#include <PubSubClient.h>
-PubSubClient * mqttClient;
+#include <MQTTClient.h>
+MQTTClient *mqttClient;
+
+#include <Co2Tracker.h>
+Co2Tracker* co2Tracker = nullptr;
 
 // Co2 sensor
 #include <Wire.h>
@@ -285,7 +288,9 @@ void logGPS(void){
 
 
 void setup() {
+  // esp_log_level_set("i2c.master", ESP_LOG_NONE);
   Serial.begin(115200);
+  delay(8000);
   
   #ifdef ENABLE_SERIAL_DEBUG
     Serial.setDebugOutput(true);
@@ -323,6 +328,9 @@ void setup() {
   #endif
 
   topic = config.getDeviceTopic() + "data";
+
+  co2Tracker = new Co2Tracker();
+  co2Tracker->setMQTTClient(config.getMQTTClient());
 
   Serial.println("###  Looping time\n");
 
@@ -404,7 +412,7 @@ void loop() {
         #endif
 
         serializeJson(doc, msg_pub);
-        mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
+        // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
         mqttClient->publish(topic.c_str(), msg_pub.c_str());
         // Serial.println(msg_pub);
       }
@@ -468,7 +476,7 @@ void loop() {
       doc["ChargingStatus"] = (int)power.getChargingStatus();
       #endif
       serializeJson(doc, msg_pub);
-      mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));
+      // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
       mqttClient->publish(topic.c_str(), msg_pub.c_str());
       // Serial.println(msg_pub);
 
