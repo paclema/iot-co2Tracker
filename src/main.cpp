@@ -125,7 +125,7 @@ void initSCD30(void){
   //Start sensor using the Wire port and enable the auto-calibration (ASC)
   if (airSensor.begin(Wire, true) == false)
   {
-      log_e("Air sensor not detected. Please check wiring. Freezing...");
+      ESP_LOGE("SCD30", "Air sensor not detected. Please check wiring. Freezing...");
       // while (1)
       //     ;
   }
@@ -165,7 +165,7 @@ void initSCD30(void){
 
 void initOLED(void){
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
-    log_w(F("SSD1306 allocation failed"));
+    ESP_LOGE("OLED", "SSD1306 allocation failed");
     // for (;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
@@ -359,17 +359,17 @@ void logGPS(void){
   if( !LittleFS.exists( fileName.str().c_str()) ) {
     File file = LittleFS.open( fileName.str().c_str(), FILE_WRITE);
     if(!file){
-      log_e("Failed to create file %s", fileName.str().c_str());
+      ESP_LOGE("logGPS","logGPS", "Failed to create file %s", fileName.str().c_str());
       return;
     }
-    log_i("Created log file %s", fileName.str().c_str());
+    ESP_LOGI("logGPS", "Created log file %s", fileName.str().c_str());
     file.println("time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerStatus,ChargingStatus,co2,temp,hum");
   }
 
   // Open the file to append new line
   File file = LittleFS.open(fileName.str().c_str(), FILE_APPEND);
   if(!file) {
-    log_e("Failed to open file %s for appending", fileName.str().c_str());
+    ESP_LOGE("logGPS","Failed to open file %s for appending", fileName.str().c_str());
     return;
   }
 
@@ -426,11 +426,11 @@ void setup() {
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
+  config.addDashboardObject("RSSI", getRSSI);
+  config.addDashboardObject("SPIFFS_Usage", getMemoryUsageString);
+  config.addDashboardObject("SPIFFS_Free", getMemoryFree);
   config.addDashboardObject("VBat", getVBat);
   config.addDashboardObject("VBus", getVBus);
-
-  mqttClient = config.getMQTTClient();
-
 
 
   // SCD30 and GPS setup:
@@ -580,7 +580,7 @@ void loop() {
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
     } else {
     updateTFT();
-    log_e("Failed logGPS while CO2 measurement");
+    ESP_LOGE("SCD30", "Failed logGPS while CO2 measurement");
     }
 
     updateTFT();
