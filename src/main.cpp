@@ -67,7 +67,7 @@ const int timeZoneoffset = 2; // Madrid UTC +2
   #define GPS_TX_PIN 12 // Wemos D1 mini/pro TX to D5 
 #endif
 
-#define GPS_DATA_PUBLISH_TIME 1000
+#define GPS_DATA_PUBLISH_TIME 10000
 
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
@@ -82,11 +82,17 @@ SoftwareSerial ss(GPS_RX_PIN, GPS_TX_PIN);
 #define SCREEN_ADDRESS 0x3C    //See datasheet for Address
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// TFT SPI screen
+#include <TFT_eSPI.h>
+#include <SPI.h>
+TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
+
 
 //Main variables:
 uint16_t co2 = 0;
 float temp = 0;
 float hum = 0;
+bool airSensorFirstMeasurement = false;
 
 double lat = 0;
 double lng = 0;
@@ -107,8 +113,9 @@ StaticJsonDocument<256> doc;
 unsigned long lastGPSPublish = 0UL;
 
 
-
-
+//Lora and TTN
+//------------
+#include "loraFunctions.h"
 
 
 
@@ -118,7 +125,7 @@ void initSCD30(void){
   //Start sensor using the Wire port and enable the auto-calibration (ASC)
   if (airSensor.begin(Wire, true) == false)
   {
-      Serial.println("Air sensor not detected. Please check wiring. Freezing...");
+      ESP_LOGE("SCD30", "Air sensor not detected. Please check wiring. Freezing...");
       // while (1)
       //     ;
   }
@@ -158,7 +165,7 @@ void initSCD30(void){
 
 void initOLED(void){
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
-    Serial.println(F("SSD1306 allocation failed"));
+    ESP_LOGE("OLED", "SSD1306 allocation failed");
     // for (;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
@@ -213,7 +220,108 @@ void updateDisplay(void){
   display.print(gpsAltitude, 0);
 
   display.display();
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawFloat(power.vBatSense.mV/1000, 3, 160, 120, 6);
+
 }
+
+
+
+void updateTFT(void){
+  // display.clearDisplay();
+  // display.setCursor(0, 0);
+  // display.setTextSize(3);
+  // display.print(gpsSpeed);
+
+  // display.setCursor(75, 20);
+  // display.setTextSize(2);
+  // display.print("km/h");
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 30);
+  // display.print("Co2:");
+  // display.setCursor(25, 30);
+  // display.print(co2);
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 40);
+  // display.print("vBat:");
+  // display.setCursor(30, 40);
+  // display.print(String((float)power.vBatSense.mV/1000,3));
+
+  // display.setTextSize(1);
+  // display.setCursor(0, 50);
+  // display.print("vBus:");
+  // display.setCursor(30, 50);
+  // display.print(String((float)power.vBusSense.mV/1000,3));
+
+  // display.setTextSize(1);
+  // display.setCursor(70, 40);
+  // display.print("SAT:");
+  // display.setCursor(95, 40);
+  // display.print(gpsSat);
+
+  // display.setTextSize(1);
+  // display.setCursor(70, 50);
+  // display.print("ALT:");
+  // display.setCursor(95, 50);
+  // display.print(gpsAltitude, 0);
+
+  // display.display();
+
+
+  /*
+  TL_DATUM = Top left
+  TC_DATUM = Top centre
+  TR_DATUM = Top right
+  ML_DATUM = Middle left
+  MC_DATUM = Middle centre
+  MR_DATUM = Middle right
+  BL_DATUM = Bottom left
+  BC_DATUM = Bottom centre
+  BR_DATUM = Bottom right*/
+
+  // tft.fillScreen(TFT_BLACK);
+  // tft.drawString("Speed:", 20, 20,4);
+  // tft.drawFloat(gpsSpeed, 3, 120, 20, 4);
+  tft.drawString("Speed: " + String(gpsSpeed), 20, 20,4);
+
+  tft.drawString("Co2: " + String(co2), 20, 50,4);
+  // tft.drawFloat(co2, 100, 100, 4);
+
+  tft.drawString("vBat: " + String(power.vBatSense.mV/1000,3), 20, 80,4);
+  // tft.drawFloat(power.vBatSense.mV/1000, 3, 40, 120, 5);
+
+    // Find centre of screen
+  // uint16_t x = tft.width()/2;
+  // uint16_t y = tft.height()/2;
+
+  // Set datum to Middle Right
+  // tft.setTextDatum(MR_DATUM);
+
+  // Set the padding to the maximum width that the digits could occupy in font 4
+  // This ensures small numbers obliterate large ones on the screen
+  // tft.setTextPadding( tft.textWidth("-88.88", 4) );
+
+  // Creat a random signed floating point number in range -15 to +15
+  // float fpn = random(91)/3.0 - 15.0;
+
+  // Draw a floating point number with 2 decimal places with right datum in font 4
+  // tft.drawFloat( fpn, 2, x, y, 4);
+
+  // Reset text padding to 0 otherwise all future rendered strings will use it!
+  // tft.setTextPadding(0);
+  
+  // Set datum to Middle Left
+  // tft.setTextDatum(ML_DATUM);
+
+  // Draw text with left datum in font 4
+  // tft.drawString(" Units", x, y, 4);
+
+Serial.println("Updating TFT");
+}
+
 
 void displayNoData(){
     display.clearDisplay();
@@ -243,23 +351,25 @@ void logGPS(void){
   // setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
   // adjustTime(timeZoneoffset * SECS_PER_HOUR);
 
-  updateDisplay();
+  // updateDisplay();
+  updateTFT();
   
   // Create file if it does not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
   if( !LittleFS.exists( fileName.str().c_str()) ) {
     File file = LittleFS.open( fileName.str().c_str(), FILE_WRITE);
     if(!file){
-      Serial.println("Failed to create file");
+      ESP_LOGE("logGPS","logGPS", "Failed to create file %s", fileName.str().c_str());
       return;
     }
+    ESP_LOGI("logGPS", "Created log file %s", fileName.str().c_str());
     file.println("time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerStatus,ChargingStatus,co2,temp,hum");
   }
 
   // Open the file to append new line
   File file = LittleFS.open(fileName.str().c_str(), FILE_APPEND);
   if(!file) {
-    Serial.println("Failed to open file for appending");
+    ESP_LOGE("logGPS","Failed to open file %s for appending", fileName.str().c_str());
     return;
   }
 
@@ -302,8 +412,17 @@ void setup() {
   digitalWrite(LDO2_EN_PIN, HIGH);
   power.setup();
   #endif
+  
+  co2Tracker = new Co2Tracker();
+  co2Tracker->setMQTTClient(config.getMQTTClient());
+  
+  config.addConfig(co2Tracker, "co2Tracker");
 
   config.begin();
+  topic = config.getDeviceTopic() + "data";
+  mqttClient = config.getMQTTClient();
+
+  loraSetup();
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
@@ -313,9 +432,6 @@ void setup() {
   config.addDashboardObject("VBat", getVBat);
   config.addDashboardObject("VBus", getVBus);
 
-  mqttClient = config.getMQTTClient();
-
-
 
   // SCD30 and GPS setup:
   initOLED();
@@ -323,14 +439,26 @@ void setup() {
   initGPS();
   delay(100);
   initSCD30();
+
+  tft.init();
+  // tft.setRotation(3);
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.fillScreen(TFT_BLACK);
+  // tft.drawFloat(4658/1000, 3, 160, 120, 6);
+  tft.drawString("Starting...", 20, 20,4);
+  delay(1000);
+  // plotLinear("A00", 0, 160);
+  // plotLinear("A1", 1 * d, 160);
+  // plotLinear("A2", 2 * d, 160);
+  // plotLinear("A3", 3 * d, 160);
+  // plotLinear("A4", 4 * d, 160);
+  // plotLinear("A5", 5 * d, 160);
+  
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
   #endif
-
-  topic = config.getDeviceTopic() + "data";
-
-  co2Tracker = new Co2Tracker();
-  co2Tracker->setMQTTClient(config.getMQTTClient());
 
   Serial.println("###  Looping time\n");
 
@@ -348,6 +476,9 @@ void loop() {
    }
 
   config.loop();
+
+  loraLoop();
+
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
   power.update();
@@ -378,11 +509,11 @@ void loop() {
     //   Serial.printf("---> NEW GPS speed: %lf\n", gps.speed.kmph());
     // }
 
+    if(co2Tracker->publishLoraWan) publish2TTN();
 
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
-        && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
+    if ( gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() ){
 
-      logGPS();
+      if(co2Tracker->localLogs) logGPS();
 
       // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
       // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
@@ -403,7 +534,7 @@ void loop() {
         doc["altitude"] = gpsAltitude;
         doc["hdop"] = gpsHdop;
         doc["course"] = gpsCourse;
-        doc["wifiSta_rssi"] = WiFi.RSSI();
+        doc["rssi_STA"] = WiFi.RSSI();
         #ifdef ARDUINO_IOTPOSTBOX_V1
         doc["vBat"] = (float)power.vBatSense.mV/1000;
         doc["vBus"] = (float)power.vBusSense.mV/1000;
@@ -428,6 +559,7 @@ void loop() {
     co2 = airSensor.getCO2();
     temp = airSensor.getTemperature();
     hum = airSensor.getHumidity();
+    airSensorFirstMeasurement = true;
     
     Serial.print("co2(ppm):");
     Serial.print(co2);
@@ -437,16 +569,21 @@ void loop() {
     Serial.print(hum, 1);
     Serial.println();
 
-    bool pubGPSdata = false;
-    if (gps.location.isValid() && gps.location.lat() > 0 && gps.location.lng() > 0 && gps.date.isValid() && gps.time.isValid() 
-        && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
+    bool GPSdataValid = false;
+    if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
+        // && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
+      	){
       logGPS();
-      pubGPSdata = true;
+      GPSdataValid = true;
     // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
-        // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
+    // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
     // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
+    } else {
+    updateTFT();
+    ESP_LOGE("SCD30", "Failed logGPS while CO2 measurement");
     }
 
+    updateTFT();
 
     if(mqttClient->connected()) {
 
@@ -457,7 +594,7 @@ void loop() {
       doc["temp"] = temp;
       doc["humidity"] = hum;
 
-      if(pubGPSdata){
+      if(GPSdataValid && co2Tracker->publishGPSdata){
         doc["lat"] = lat;
         doc["lng"] = lng;
         doc["date"] = gpsDate;
@@ -468,7 +605,7 @@ void loop() {
         doc["hdop"] = gpsHdop;
         doc["course"] = gpsCourse;
       }
-      doc["wifiSta_rssi"] = WiFi.RSSI();
+      doc["rssi_STA"] = WiFi.RSSI();
       #ifdef ARDUINO_IOTPOSTBOX_V1
       doc["vBat"] = (float)power.vBatSense.mV/1000;
       doc["vBus"] = (float)power.vBusSense.mV/1000;
