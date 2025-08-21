@@ -16,6 +16,7 @@
 // GPS
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
+#include <sstream>
 // #include <string.h>
 #ifndef GPS_RX_PIN
   #define GPS_RX_PIN 14 // Wemos D1 mini/pro RX to D6 
@@ -38,14 +39,19 @@
 // #include <SPI.h>
 
 //Lora and TTN
-#include <loraFunctions.h>
+// #include <loraFunctions.h>
+#include <LoRaWANClient.h>
+#include <LoRaWANClientCallback.h>
+#include <CayenneLPP.h>
+#define CAYENNE_MAX_PAYLOAD_SIZE    64
+
 
 #ifdef ARDUINO_IOTPOSTBOX_V1
 #include "PowerManagement.h"
 extern PowerManagement power;
 #endif
 
-class Co2Tracker : public MQTTClientCallback, public IWebConfig {
+class Co2Tracker : public MQTTClientCallback, public IWebConfig, public LoRaWANClientCallback {
 public:
     Co2Tracker();
     void begin();
@@ -60,13 +66,24 @@ public:
     // MQTTClientCallback
     void onConnected(MQTTClient* client) override;
 
+    // LoRaWANClientCallback
+    void onTxComplete(LoRaWANClient* client) {
+        Serial.println("Transmission complete");
+    }
+    void onDownlinkReceived(LoRaWANClient* client, const lorawan_event_data* data) override {
+        Serial.printf("Downlink received: %.*s\n", data->data_len, data->data);
+    }
+    // void onEvent(LoRaWANClient* client, ev_t event) override {}
+    void sendLoraCayenne();
+    void sendLoraBinary();
+    
     // Flags configurables
     bool localLogs = false;
     bool publishGPSdata = false;
     bool publishLoraWan = false;
 
 private:
-
+    LoRaWANClient lorawan;
     MQTTClient* pMQTTClient = nullptr;
     SCD30 airSensor;
     TinyGPSPlus gps;
