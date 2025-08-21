@@ -6,6 +6,7 @@ Co2Tracker::Co2Tracker()
       tft()
 {
     // TFT_eSPI tft = TFT_eSPI(); 
+    lorawan.addCallback(this);
 }
 
 void Co2Tracker::initSCD30(void){

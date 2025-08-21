@@ -20,16 +20,18 @@
 
 class LoRaWANClient {
 public:
-    LoRaWANClient();
-    void begin();
-    void loop();
-    bool send(uint8_t* payload, size_t len, uint8_t port = 1, bool confirmed = false);
-
+    static LoRaWANClient* instance;
+    static LoRaWANClient* getInstance() { return instance; }
     void addCallback(LoRaWANClientCallback* callback);
-
-private:
+    LoRaWANClient();
     void onEvent(ev_t ev);
 
+    void begin();
+    void loop();
+    
+    bool send(uint8_t* payload, size_t len, uint8_t port = 1, bool confirmed = false);
+
+private:
     std::list<LoRaWANClientCallback*> callbacks;
     osjob_t sendjob;
 

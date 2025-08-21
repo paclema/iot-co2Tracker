@@ -68,10 +68,10 @@ public:
 
     // LoRaWANClientCallback
     void onTxComplete(LoRaWANClient* client) {
-        Serial.println("Transmission complete");
+        ESP_LOGW("Co2Tracker", "LoRaWAN transmission complete");
     }
     void onDownlinkReceived(LoRaWANClient* client, const lorawan_event_data* data) override {
-        Serial.printf("Downlink received: %.*s\n", data->data_len, data->data);
+        ESP_LOGW("Co2Tracker", "LoRaWAN Downlink received: %.*s", data->data_len, data->data);
     }
     // void onEvent(LoRaWANClient* client, ev_t event) override {}
     void sendLoraCayenne();

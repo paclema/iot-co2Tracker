@@ -1,5 +1,8 @@
 #include "LoRaWANClient.h"
 
+// Global singleton instance
+LoRaWANClient* LoRaWANClient::instance = nullptr;
+
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first. When copying an EUI from ttnctl output, this means to reverse
@@ -19,6 +22,12 @@ extern "C" void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8); }
 extern "C" void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8); }
 extern "C" void os_getDevKey (u1_t* buf) { memcpy_P(buf, APPKEY, 16); }
 
+extern "C" void onEvent(ev_t ev) {
+    if (LoRaWANClient::instance) {
+        LoRaWANClient::instance->onEvent(ev);
+    }
+}
+
 // // Pinmap and HAL config
 LoRaWANClient::MyHalConfig_t LoRaWANClient::myHalConfig{};
 
@@ -32,7 +41,9 @@ const lmic_pinmap LoRaWANClient::myPinmap = {
 
 
 LoRaWANClient::LoRaWANClient() {
+    LoRaWANClient::instance = this;
 }
+
 
 void LoRaWANClient::begin() {
 	log_d("Setting up lora...");
