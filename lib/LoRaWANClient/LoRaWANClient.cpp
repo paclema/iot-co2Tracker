@@ -81,15 +81,8 @@ bool LoRaWANClient::send(uint8_t* payload, size_t len, uint8_t port, bool confir
         Serial.println(F("OP_TXRXPEND, not sending"));
         return false;
     }
+    // return LMIC_setTxData2(port, payload, len, confirmed ? 1 : 0);
     LMIC_setTxData2(port, payload, len, confirmed ? 1 : 0);
-    Serial.print(F("Packet queued: size="));
-    Serial.println(len);
-    Serial.print("Payload: ");
-    for (size_t i = 0; i < len; i++) {
-        Serial.print(payload[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
     return true;
 }
 
