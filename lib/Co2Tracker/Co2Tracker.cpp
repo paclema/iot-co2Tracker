@@ -105,7 +105,6 @@ void Co2Tracker::begin() {
     // plotLinear("A4", 4 * d, 160);
     // plotLinear("A5", 5 * d, 160);
 
-    // loraSetup();
     lorawan.begin();
 }
 
@@ -647,10 +646,10 @@ void Co2Tracker::sendLoraBinary() {
   lorawan.send(payload, index);
 
   Serial.printf("Packet queued: size=%d (must be <= %zu)\n", index, sizeof(payload));
-  Serial.println(index);
   Serial.print("Payload: ");
   for (int i = 0; i < sizeof(payload); i++) {
       Serial.print(payload[i], HEX);
       Serial.print(" ");
   }
+  Serial.println();
 }
