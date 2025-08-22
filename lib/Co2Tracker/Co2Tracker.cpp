@@ -1,11 +1,8 @@
 #include "Co2Tracker.h"
 
 Co2Tracker::Co2Tracker()
-    : ss(GPS_RX_PIN, GPS_TX_PIN),
-      display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET),
-      tft()
+    : ss(GPS_RX_PIN, GPS_TX_PIN)
 {
-    // TFT_eSPI tft = TFT_eSPI(); 
     lorawan.addCallback(this);
 }
 
@@ -53,15 +50,6 @@ void Co2Tracker::initSCD30(void){
 
 }
 
-void Co2Tracker::initOLED(void){
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
-    ESP_LOGE("OLED", "SSD1306 allocation failed");
-    // for (;;); // Don't proceed, loop forever
-  }
-  display.clearDisplay();
-  display.display();
-
-}
 void Co2Tracker::initGPS(void){
   Serial.print(F("TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
   Serial.println();
@@ -83,27 +71,8 @@ void Co2Tracker::begin() {
     #endif
 
     // SCD30 and GPS setup:
-    initOLED();
-    displayNoData();
     initGPS();
-    delay(100);
     initSCD30();
-
-    tft.init();
-    // tft.setRotation(3);
-    tft.setRotation(1);
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.fillScreen(TFT_BLACK);
-    // tft.drawFloat(4658/1000, 3, 160, 120, 6);
-    tft.drawString("Starting...", 20, 20,4);
-    delay(1000);
-    // plotLinear("A00", 0, 160);
-    // plotLinear("A1", 1 * d, 160);
-    // plotLinear("A2", 2 * d, 160);
-    // plotLinear("A3", 3 * d, 160);
-    // plotLinear("A4", 4 * d, 160);
-    // plotLinear("A5", 5 * d, 160);
 
     lorawan.begin();
 }
@@ -212,11 +181,11 @@ void Co2Tracker::loop() {
           // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
           // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
       } else {
-          updateTFT();
+          // updateTFT();
           ESP_LOGE("SCD30", "Failed logGPS while CO2 measurement");
       }
 
-      updateTFT();
+      // updateTFT();
 
       if (pMQTTClient && pMQTTClient->connected()) {
           String msg_pub;
@@ -255,157 +224,6 @@ void Co2Tracker::loop() {
   lorawan.loop();
 }
 
-void Co2Tracker::updateDisplay(void){
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(3);
-  display.print(gpsSpeed);
-
-  display.setCursor(75, 20);
-  display.setTextSize(2);
-  display.print("km/h");
-
-  display.setTextSize(1);
-  display.setCursor(0, 30);
-  display.print("Co2:");
-  display.setCursor(25, 30);
-  display.print(co2);
-
-  display.setTextSize(1);
-  display.setCursor(0, 40);
-  display.print("vBat:");
-  display.setCursor(30, 40);
-  display.print(String((float)power.vBatSense.mV/1000,3));
-
-  display.setTextSize(1);
-  display.setCursor(0, 50);
-  display.print("vBus:");
-  display.setCursor(30, 50);
-  display.print(String((float)power.vBusSense.mV/1000,3));
-
-  display.setTextSize(1);
-  display.setCursor(70, 40);
-  display.print("SAT:");
-  display.setCursor(95, 40);
-  display.print(gpsSat);
-
-  display.setTextSize(1);
-  display.setCursor(70, 50);
-  display.print("ALT:");
-  display.setCursor(95, 50);
-  display.print(gpsAltitude, 0);
-
-  display.display();
-
-  tft.fillScreen(TFT_BLACK);
-  tft.drawFloat(power.vBatSense.mV/1000, 3, 160, 120, 6);
-
-}
-
-
-
-void Co2Tracker::updateTFT(void){
-  // display.clearDisplay();
-  // display.setCursor(0, 0);
-  // display.setTextSize(3);
-  // display.print(gpsSpeed);
-
-  // display.setCursor(75, 20);
-  // display.setTextSize(2);
-  // display.print("km/h");
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 30);
-  // display.print("Co2:");
-  // display.setCursor(25, 30);
-  // display.print(co2);
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 40);
-  // display.print("vBat:");
-  // display.setCursor(30, 40);
-  // display.print(String((float)power.vBatSense.mV/1000,3));
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 50);
-  // display.print("vBus:");
-  // display.setCursor(30, 50);
-  // display.print(String((float)power.vBusSense.mV/1000,3));
-
-  // display.setTextSize(1);
-  // display.setCursor(70, 40);
-  // display.print("SAT:");
-  // display.setCursor(95, 40);
-  // display.print(gpsSat);
-
-  // display.setTextSize(1);
-  // display.setCursor(70, 50);
-  // display.print("ALT:");
-  // display.setCursor(95, 50);
-  // display.print(gpsAltitude, 0);
-
-  // display.display();
-
-
-  /*
-  TL_DATUM = Top left
-  TC_DATUM = Top centre
-  TR_DATUM = Top right
-  ML_DATUM = Middle left
-  MC_DATUM = Middle centre
-  MR_DATUM = Middle right
-  BL_DATUM = Bottom left
-  BC_DATUM = Bottom centre
-  BR_DATUM = Bottom right*/
-
-  // tft.fillScreen(TFT_BLACK);
-  // tft.drawString("Speed:", 20, 20,4);
-  // tft.drawFloat(gpsSpeed, 3, 120, 20, 4);
-  tft.drawString("Speed: " + String(gpsSpeed), 20, 20,4);
-
-  tft.drawString("Co2: " + String(co2), 20, 50,4);
-  // tft.drawFloat(co2, 100, 100, 4);
-
-  tft.drawString("vBat: " + String(power.vBatSense.mV/1000,3), 20, 80,4);
-  // tft.drawFloat(power.vBatSense.mV/1000, 3, 40, 120, 5);
-
-    // Find centre of screen
-  // uint16_t x = tft.width()/2;
-  // uint16_t y = tft.height()/2;
-
-  // Set datum to Middle Right
-  // tft.setTextDatum(MR_DATUM);
-
-  // Set the padding to the maximum width that the digits could occupy in font 4
-  // This ensures small numbers obliterate large ones on the screen
-  // tft.setTextPadding( tft.textWidth("-88.88", 4) );
-
-  // Creat a random signed floating point number in range -15 to +15
-  // float fpn = random(91)/3.0 - 15.0;
-
-  // Draw a floating point number with 2 decimal places with right datum in font 4
-  // tft.drawFloat( fpn, 2, x, y, 4);
-
-  // Reset text padding to 0 otherwise all future rendered strings will use it!
-  // tft.setTextPadding(0);
-  
-  // Set datum to Middle Left
-  // tft.setTextDatum(ML_DATUM);
-
-  // Draw text with left datum in font 4
-  // tft.drawString(" Units", x, y, 4);
-
-Serial.println("Updating TFT");
-}
-
-void Co2Tracker::displayNoData(){
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.setTextSize(3);
-    display.print("No Data");
-    display.display();
-}
 
 void Co2Tracker::logGPS(void){
   std::stringstream fileName;
@@ -426,7 +244,7 @@ void Co2Tracker::logGPS(void){
   // adjustTime(timeZoneoffset * SECS_PER_HOUR);
 
   // updateDisplay();
-  updateTFT();
+  // updateTFT();
   
   // Create file if it does not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";

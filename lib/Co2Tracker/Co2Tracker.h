@@ -90,9 +90,6 @@ private:
     const int timeZoneoffset = 2; // Madrid UTC +2
     static const uint32_t GPSBaud = 9600;
     SoftwareSerial ss;
-    Adafruit_SSD1306 display;
-    TFT_eSPI tft;
-    // TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
     //Main sensor and state variables:
     uint16_t co2 = 0;
@@ -113,14 +110,10 @@ private:
     String topic = "";
     unsigned long lastGPSPublish = 0UL;
 
-    // Métodos privados de inicialización y display
-    void initSCD30();
-    void initOLED();
-    void initGPS();
-    void updateDisplay();
-    void updateTFT();
-    void displayNoData();
-    void logGPS();
+
+    void initSCD30(void);
+    void initGPS(void);
+    void logGPS(void);
 
 };
 
