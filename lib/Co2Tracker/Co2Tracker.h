@@ -27,16 +27,8 @@
 
 #define GPS_DATA_PUBLISH_TIME 10000
 
-// OLED screen
-#include <Adafruit_SSD1306.h>
-#define SCREEN_WIDTH 128       // OLED display width, in pixels
-#define SCREEN_HEIGHT 64       // OLED display height, in pixels
-#define OLED_RESET -1          //Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C    //See datasheet for Address
-
 // TFT SPI screen
-#include <TFT_eSPI.h>
-// #include <SPI.h>
+
 
 //Lora and TTN
 // #include <loraFunctions.h>

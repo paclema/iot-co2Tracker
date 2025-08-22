@@ -153,7 +153,7 @@ void Co2Tracker::loop() {
               // Serial.println(msg_pub);
           }
       } else {
-          displayNoData();
+          // displayNoData();
       }
   }
 
