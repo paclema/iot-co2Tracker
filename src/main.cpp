@@ -30,6 +30,42 @@ PowerManagement power;
 #include <Co2Tracker.h>
 Co2Tracker* co2Tracker = nullptr;
 
+// TFT screen and LVGL UI
+#include <lvgl.h>
+#include <TFT_eSPI.h>
+#include <ui.h>
+
+enum { SCREENBUFFER_SIZE_PIXELS = TFT_WIDTH * TFT_HEIGHT / 10 };
+static lv_color_t buf [SCREENBUFFER_SIZE_PIXELS];
+
+TFT_eSPI tft = TFT_eSPI( TFT_WIDTH, TFT_HEIGHT ); /* TFT instance */
+
+#if LV_USE_LOG != 0
+void my_print(const char * buf) {
+  Serial.printf(buf);
+  Serial.flush();
+}
+#endif
+
+void my_disp_flush (lv_display_t *disp, const lv_area_t *area, uint8_t *pixelmap){
+  uint32_t w = ( area->x2 - area->x1 + 1 );
+  uint32_t h = ( area->y2 - area->y1 + 1 );
+
+  if (LV_COLOR_16_SWAP) {
+      size_t len = lv_area_get_size( area );
+      lv_draw_sw_rgb565_swap( pixelmap, len );
+  }
+
+  tft.startWrite();
+  tft.setAddrWindow( area->x1, area->y1, w, h );
+  tft.pushColors( (uint16_t*) pixelmap, w * h, true );
+  tft.endWrite();
+
+  lv_disp_flush_ready( disp );
+}
+
+static uint32_t my_tick_get_cb (void) { return millis(); }
+
 
 // Websocket functions to publish:
 String getLoopTime(){ return String(currentLoopMillis - previousMainLoopMillis);}
@@ -48,7 +84,30 @@ String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 void setup() {
   // esp_log_level_set("i2c.master", ESP_LOG_NONE);
   Serial.begin(115200);
-  delay(8000);
+
+
+  Serial.println("###  LVGL setup\n");
+  Serial.printf("LVGL V%d.%d.%d\n", lv_version_major(), lv_version_minor(), lv_version_patch());
+  lv_init();
+
+#if LV_USE_LOG != 0
+  lv_log_register_print_cb( my_print ); /* register print function for debugging */
+#endif
+
+  tft.begin();          /* TFT init */
+  tft.setRotation( TFT_ROTATION ); /* Landscape orientation, flipped */
+
+  static lv_disp_t* disp;
+  disp = lv_display_create( TFT_WIDTH, TFT_HEIGHT );
+  lv_display_set_buffers( disp, buf, NULL, SCREENBUFFER_SIZE_PIXELS * sizeof(lv_color_t), LV_DISPLAY_RENDER_MODE_PARTIAL );
+  lv_display_set_flush_cb( disp, my_disp_flush );
+
+  lv_tick_set_cb( my_tick_get_cb );
+
+  ui_init();
+  lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier, before setup completes ?
+
+  // delay(8000);
   
   #ifdef ENABLE_SERIAL_DEBUG
     Serial.setDebugOutput(true);
@@ -89,6 +148,8 @@ void setup() {
 }
 
 void loop() {
+
+  lv_timer_handler();
 
   currentLoopMillis = millis();
 

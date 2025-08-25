@@ -205,6 +205,10 @@ void Co2Tracker::loop() {
               doc["altitude"] = gpsAltitude;
               doc["hdop"] = gpsHdop;
               doc["course"] = gpsCourse;
+
+              String text = "Sat: " + String(gpsSat);
+              lv_label_set_text(ui_sat, text.c_str());
+
           }
           doc["rssi_STA"] = WiFi.RSSI();
           #ifdef ARDUINO_IOTPOSTBOX_V1
@@ -217,6 +221,8 @@ void Co2Tracker::loop() {
           // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
           pMQTTClient->publish(topic.c_str(), msg_pub.c_str());
           // Serial.println(msg_pub);
+
+          lv_label_set_text(ui_leftMainDataValue, String(co2).c_str());
 
       }
   }

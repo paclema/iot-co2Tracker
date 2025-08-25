@@ -27,8 +27,9 @@
 
 #define GPS_DATA_PUBLISH_TIME 10000
 
-// TFT SPI screen
-
+// LVGL UI
+#include <lvgl.h>
+#include "ui.h"
 
 //Lora and TTN
 // #include <loraFunctions.h>
