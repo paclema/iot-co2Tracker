@@ -69,7 +69,8 @@ static uint32_t my_tick_get_cb (void) { return millis(); }
 PowerManagement power;
 TaskHandle_t powerChargeCbTaskHandle = nullptr;
 
-// Task to update the battery icon alpha on charging status change
+// Task to update the battery icon on charging status change
+#include "battery_ui.h"
 void powerChargeCbTask(void *pvParameters) {
   (void)pvParameters;
   PowerStatus lastStatus = power.getPowerStatus();
@@ -78,14 +79,7 @@ void powerChargeCbTask(void *pvParameters) {
     PowerStatus currentPowerStatus = power.getPowerStatus();
     if (currentPowerStatus != lastStatus) {
       lastStatus = currentPowerStatus;
-      lv_lock();
-      if (currentPowerStatus != PowerStatus::BatteryPowered) {
-          lv_obj_set_style_opa(ui_batImg, 255, LV_PART_MAIN | LV_STATE_DEFAULT); // Brillante
-          
-      } else {
-          lv_obj_set_style_opa(ui_batImg, 100, LV_PART_MAIN | LV_STATE_DEFAULT); // Menos brillo
-      }
-      lv_unlock();
+      update_battery_icon(power, (float)power.vBatSense.mV / 1000.0);
     }
   }
 }
@@ -105,11 +99,14 @@ void powerUpdateTask(void *pvParameters) {
   char batStr[8];
   for (;;) {
     power.update();
-    snprintf(batStr, sizeof(batStr), "%1.2fv", (float)power.vBatSense.mV / 1000.0);
+    float voltage = (float)power.vBatSense.mV / 1000.0;
+    snprintf(batStr, sizeof(batStr), "%1.2fv", voltage);
     lv_lock();
     lv_label_set_text(ui_batVal, batStr);
     lv_unlock();
+    update_battery_icon(power, voltage);
     vTaskDelay(pdMS_TO_TICKS(POWER_UI_UPDATE_DELAY_MS));
+
   }
 }
 #endif
