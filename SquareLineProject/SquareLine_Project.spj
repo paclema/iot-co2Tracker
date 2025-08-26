@@ -6723,7 +6723,7 @@
     "theme_dark": true,
     "theme_color1": 5,
     "theme_color2": 0,
-    "uiExportFolderPath": "C:\\Users\\pacle\\Desktop\\Repos\\iot-co2Tracker\\lib\\ui\\src",
+    "uiExportFolderPath": "C:\\Users\\pacle\\Desktop\\Repos\\iot-co2Tracker\\lib\\ui",
     "projectExportFolderPath": "C:\\Users\\pacle\\Desktop\\Repos\\iot-co2Tracker\\SquareLineProject",
     "custom_variable_prefix": "uic",
     "backup_cnt": 11,
