@@ -4,6 +4,10 @@ Co2Tracker::Co2Tracker()
     : ss(GPS_RX_PIN, GPS_TX_PIN)
 {
     lorawan.addCallback(this);
+
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    lv_obj_set_style_img_opa(ui_mqttImg, 100, LV_PART_MAIN);
+
 }
 
 void Co2Tracker::initSCD30(void){
@@ -94,6 +98,8 @@ void Co2Tracker::onConnected(MQTTClient* client) {
 
   String msg = "connected = true";
   client->publish(pMQTTClient->getBaseTopic().c_str(), msg.c_str());
+
+  lv_obj_set_style_img_opa(ui_mqttImg, 255, LV_PART_MAIN);
 
 }
 
@@ -332,7 +338,13 @@ void Co2Tracker::sendLoraCayenne() {
 
 
 
-  lorawan.send(lpp.getBuffer(), lpp.getSize());
+  if(lorawan.send(lpp.getBuffer(), lpp.getSize()))
+    // lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    ESP_LOGI("Co2Tracker", "LoRaWAN packet queued");
+  else {
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    ESP_LOGW("Co2Tracker", "LoRaWAN transmission failed");
+  }
 
 
   // Serial.printf("lpp buffer: %.*s\n", lpp.getSize(), (char*)lpp.getBuffer());
@@ -467,8 +479,13 @@ void Co2Tracker::sendLoraBinary() {
   payload[index++] = (uint8_t)power.getPowerStatus();
   payload[index++] = (uint8_t)power.getChargingStatus();
 
-  lorawan.send(payload, index);
-
+  if(lorawan.send(payload, index)) {
+    // lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    ESP_LOGI("Co2Tracker", "LoRaWAN packet queued");
+  else {
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    ESP_LOGW("Co2Tracker", "LoRaWAN transmission failed");
+  }
   Serial.printf("Packet queued: size=%d (must be <= %zu)\n", index, sizeof(payload));
   Serial.print("Payload: ");
   for (int i = 0; i < sizeof(payload); i++) {

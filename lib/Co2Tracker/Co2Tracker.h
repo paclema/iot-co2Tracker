@@ -66,6 +66,10 @@ public:
     void onDownlinkReceived(LoRaWANClient* client, const lorawan_event_data* data) override {
         ESP_LOGW("Co2Tracker", "LoRaWAN Downlink received: %.*s", data->data_len, data->data);
     }
+    void onJoinSuccess(LoRaWANClient* client) override {
+        ESP_LOGW("Co2Tracker", "LoRaWAN Join Success");
+        lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    }
     // void onEvent(LoRaWANClient* client, ev_t event) override {}
     void sendLoraCayenne();
     void sendLoraBinary();
