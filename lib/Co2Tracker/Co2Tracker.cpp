@@ -127,6 +127,15 @@ void Co2Tracker::loop() {
       if (publishLoraWan) sendLoraBinary();
 
       if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid()) {
+          // lv_obj_set_style_img_opa(ui_gps, LV_OPA_COVER, LV_PART_MAIN);
+                    
+          // String text = "Sat: " + String(gps.satellites.value());
+          String text = String(gps.satellites.value());
+          lv_label_set_text(ui_gpsSat, text.c_str());
+          lv_label_set_text(ui_speedValue, String(gps.speed.kmph()).c_str());
+          lv_label_set_text(ui_altitudeValue, String(gps.altitude.meters()).c_str());
+          lv_label_set_text(ui_courseValue, String(gps.course.deg()).c_str());
+
           if (localLogs) logGPS();
 
           // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
@@ -176,6 +185,9 @@ void Co2Tracker::loop() {
       Serial.print(" humidity(%):");
       Serial.print(hum, 1);
       Serial.println();
+      lv_label_set_text(ui_co2Value, String(co2).c_str());
+      lv_label_set_text(ui_tempValue, String(temp).c_str());
+      lv_label_set_text(ui_humValue, String(hum).c_str());
 
       bool GPSdataValid = false;
       if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
@@ -212,9 +224,6 @@ void Co2Tracker::loop() {
               doc["hdop"] = gpsHdop;
               doc["course"] = gpsCourse;
 
-              String text = "Sat: " + String(gpsSat);
-              lv_label_set_text(ui_sat, text.c_str());
-
           }
           doc["rssi_STA"] = WiFi.RSSI();
           #ifdef ARDUINO_IOTPOSTBOX_V1
@@ -227,8 +236,6 @@ void Co2Tracker::loop() {
           // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
           pMQTTClient->publish(topic.c_str(), msg_pub.c_str());
           // Serial.println(msg_pub);
-
-          lv_label_set_text(ui_leftMainDataValue, String(co2).c_str());
 
       }
   }
