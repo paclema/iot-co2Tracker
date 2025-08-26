@@ -103,6 +103,10 @@ void Co2Tracker::onConnected(MQTTClient* client) {
 
 }
 
+void Co2Tracker::onDisconnected(MQTTClient* client) {
+  lv_obj_set_style_img_opa(ui_mqttImg, 100, LV_PART_MAIN);
+}
+
 void Co2Tracker::loop() {
 
   // Check GPS location:
@@ -489,7 +493,7 @@ void Co2Tracker::sendLoraBinary() {
   if(lorawan.send(payload, index)) {
     // lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
     ESP_LOGI("Co2Tracker", "LoRaWAN packet queued");
-  else {
+  } else {
     lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
     ESP_LOGW("Co2Tracker", "LoRaWAN transmission failed");
   }

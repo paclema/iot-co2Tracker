@@ -58,6 +58,7 @@ public:
 
     // MQTTClientCallback
     void onConnected(MQTTClient* client) override;
+    void onDisconnected(MQTTClient* client) override;
 
     // LoRaWANClientCallback
     void onTxComplete(LoRaWANClient* client) {
