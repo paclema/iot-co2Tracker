@@ -22,11 +22,6 @@ unsigned long previousSPIFFSLoopMillis = 0;
 #include "WebConfigServer.h"
 WebConfigServer config;   // <- global configuration object
 
-#ifdef ARDUINO_IOTPOSTBOX_V1
-#include "PowerManagement.h"
-PowerManagement power;
-#endif
-
 #include <Co2Tracker.h>
 Co2Tracker* co2Tracker = nullptr;
 
@@ -65,6 +60,59 @@ void my_disp_flush (lv_display_t *disp, const lv_area_t *area, uint8_t *pixelmap
 }
 
 static uint32_t my_tick_get_cb (void) { return millis(); }
+
+#ifdef ARDUINO_IOTPOSTBOX_V1
+#include "PowerManagement.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#define POWER_UI_UPDATE_DELAY_MS 1000
+PowerManagement power;
+TaskHandle_t powerChargeCbTaskHandle = nullptr;
+
+// Task to update the battery icon alpha on charging status change
+void powerChargeCbTask(void *pvParameters) {
+  (void)pvParameters;
+  PowerStatus lastStatus = power.getPowerStatus();
+  for (;;) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // Wait for notification
+    PowerStatus currentPowerStatus = power.getPowerStatus();
+    if (currentPowerStatus != lastStatus) {
+      lastStatus = currentPowerStatus;
+      lv_lock();
+      if (currentPowerStatus != PowerStatus::BatteryPowered) {
+          lv_obj_set_style_opa(ui_batImg, 255, LV_PART_MAIN | LV_STATE_DEFAULT); // Brillante
+          
+      } else {
+          lv_obj_set_style_opa(ui_batImg, 100, LV_PART_MAIN | LV_STATE_DEFAULT); // Menos brillo
+      }
+      lv_unlock();
+    }
+  }
+}
+
+// Callback to notify the icon task from PowerManagement
+void onChargingStatusChanged(void) {
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  if (powerChargeCbTaskHandle) {
+    vTaskNotifyGiveFromISR(powerChargeCbTaskHandle, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  }
+}
+
+// FreeRTOS task to update power and LVGL label
+void powerUpdateTask(void *pvParameters) {
+  (void)pvParameters;
+  char batStr[8];
+  for (;;) {
+    power.update();
+    snprintf(batStr, sizeof(batStr), "%1.2fv", (float)power.vBatSense.mV / 1000.0);
+    lv_lock();
+    lv_label_set_text(ui_batVal, batStr);
+    lv_unlock();
+    vTaskDelay(pdMS_TO_TICKS(POWER_UI_UPDATE_DELAY_MS));
+  }
+}
+#endif
 
 
 // Websocket functions to publish:
@@ -116,6 +164,26 @@ void setup() {
   #ifdef ARDUINO_IOTPOSTBOX_V1
   // // while(!Serial) {}
   power.setup();
+  power.update();
+  power.addChargingStatusCallback(onChargingStatusChanged);
+  xTaskCreatePinnedToCore(
+    powerUpdateTask,
+    "PowerUpdateTask",
+    4096,
+    NULL,
+    4,
+    NULL,
+    0
+  );
+  xTaskCreatePinnedToCore(
+    powerChargeCbTask,
+    "powerChargeCbTask",
+    2048,
+    NULL,
+    4,
+    &powerChargeCbTaskHandle,
+    0
+  );
   #endif
   
   co2Tracker = new Co2Tracker();
@@ -137,9 +205,6 @@ void setup() {
   config.addDashboardObject("VBus", getVBus);
 
   
-  #ifdef ARDUINO_IOTPOSTBOX_V1
-  power.update();
-  #endif
 
   co2Tracker->begin();
 
@@ -152,14 +217,12 @@ void loop() {
   lv_timer_handler();
 
   currentLoopMillis = millis();
-
-   if (currentLoopMillis - previousSPIFFSLoopMillis > SPIFFS_CHECK_SPACE_TIME){
+  if (currentLoopMillis - previousSPIFFSLoopMillis > SPIFFS_CHECK_SPACE_TIME){
     previousSPIFFSLoopMillis = currentLoopMillis;
     totalBytes = LittleFS.totalBytes();
     usedBytes = LittleFS.usedBytes();
     freeBytes  = totalBytes - usedBytes;
-   }
-
+  }
   config.loop();
   co2Tracker->loop();
 
