@@ -46,10 +46,10 @@ void my_disp_flush (lv_display_t *disp, const lv_area_t *area, uint8_t *pixelmap
   uint32_t w = ( area->x2 - area->x1 + 1 );
   uint32_t h = ( area->y2 - area->y1 + 1 );
 
-  if (LV_COLOR_16_SWAP) {
-      size_t len = lv_area_get_size( area );
-      lv_draw_sw_rgb565_swap( pixelmap, len );
-  }
+  // if (LV_COLOR_16_SWAP) {
+  //     size_t len = lv_area_get_size( area );
+  //     lv_draw_sw_rgb565_swap( pixelmap, len );
+  // }
 
   tft.startWrite();
   tft.setAddrWindow( area->x1, area->y1, w, h );
@@ -166,7 +166,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     powerUpdateTask,
     "PowerUpdateTask",
-    4096,
+    2048,
     NULL,
     4,
     NULL,
@@ -175,7 +175,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     powerChargeCbTask,
     "powerChargeCbTask",
-    2048,
+    1024,
     NULL,
     4,
     &powerChargeCbTaskHandle,
@@ -222,12 +222,6 @@ void loop() {
   }
   config.loop();
   co2Tracker->loop();
-
-
-  #ifdef ARDUINO_IOTPOSTBOX_V1
-  power.update();
-  #endif
-
 
 
   /// TODO. SET RECONECTION CALLBACK!!
