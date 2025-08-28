@@ -53,6 +53,7 @@ extern lv_obj_t * ui_altitudeUnits;
 extern lv_obj_t * ui_courseContainer;
 extern lv_obj_t * ui_courseValue;
 extern lv_obj_t * ui_courseUnits;
+extern lv_obj_t * ui_gpsCourseArrow;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

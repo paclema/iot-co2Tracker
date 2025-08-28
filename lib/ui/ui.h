@@ -47,6 +47,7 @@ LV_IMG_DECLARE(
     ui_img_satellite_alt_24dp_e3e3e3_fill0_wght400_grad0_opsz24_png);    // assets/satellite_alt_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(
     ui_img_android_wifi_3_bar_24dp_e3e3e3_fill0_wght400_grad0_opsz24_png);    // assets/android_wifi_3_bar_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(ui_img_arrow_png);    // assets/arrow.png
 LV_IMG_DECLARE(ui_img_1015935_png);    // assets/1015935.png
 LV_IMG_DECLARE(
     ui_img_android_wifi_3_bar_alert_24dp_e3e3e3_fill0_wght400_grad0_opsz24_png);    // assets/android_wifi_3_bar_alert_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png

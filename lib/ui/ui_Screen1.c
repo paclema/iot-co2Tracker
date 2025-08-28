@@ -45,6 +45,7 @@ lv_obj_t * ui_altitudeUnits = NULL;
 lv_obj_t * ui_courseContainer = NULL;
 lv_obj_t * ui_courseValue = NULL;
 lv_obj_t * ui_courseUnits = NULL;
+lv_obj_t * ui_gpsCourseArrow = NULL;
 // event funtions
 
 // build funtions
@@ -259,6 +260,11 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_style_bg_grad_stop(ui_leftMainData, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui_leftMainData, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    lv_obj_set_style_pad_left(ui_leftMainData, 10, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_leftMainData, 10, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_leftMainData, 0, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_leftMainData, 0, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+
     ui_co2Container = lv_obj_create(ui_leftMainData);
     lv_obj_remove_style_all(ui_co2Container);
     lv_obj_set_height(ui_co2Container, lv_pct(60));
@@ -313,7 +319,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_height(ui_tempContainer, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_flex_grow(ui_tempContainer, 1);
     lv_obj_set_align(ui_tempContainer, LV_ALIGN_CENTER);
-    lv_obj_set_flex_flow(ui_tempContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(ui_tempContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_tempContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_remove_flag(ui_tempContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
@@ -323,7 +329,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_align(ui_tempValue, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_tempValue, LV_FLEX_FLOW_COLUMN_WRAP);
     lv_obj_set_flex_align(ui_tempValue, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_label_set_text(ui_tempValue, "21.4");
+    lv_label_set_text(ui_tempValue, "21.46");
     lv_obj_remove_flag(ui_tempValue, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                        LV_OBJ_FLAG_SNAPPABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM |
                        LV_OBJ_FLAG_SCROLL_CHAIN);     /// Flags
@@ -351,7 +357,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_height(ui_humContainer, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_flex_grow(ui_humContainer, 1);
     lv_obj_set_align(ui_humContainer, LV_ALIGN_CENTER);
-    lv_obj_set_flex_flow(ui_humContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(ui_humContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_humContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_remove_flag(ui_humContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
@@ -361,7 +367,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_align(ui_humValue, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_humValue, LV_FLEX_FLOW_COLUMN_WRAP);
     lv_obj_set_flex_align(ui_humValue, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_label_set_text(ui_humValue, "34.6");
+    lv_label_set_text(ui_humValue, "34.68");
     lv_obj_remove_flag(ui_humValue, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                        LV_OBJ_FLAG_SNAPPABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM |
                        LV_OBJ_FLAG_SCROLL_CHAIN);     /// Flags
@@ -453,7 +459,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_height(ui_altitudeContainer, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_flex_grow(ui_altitudeContainer, 1);
     lv_obj_set_align(ui_altitudeContainer, LV_ALIGN_CENTER);
-    lv_obj_set_flex_flow(ui_altitudeContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(ui_altitudeContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_altitudeContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_remove_flag(ui_altitudeContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
@@ -463,7 +469,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_align(ui_altitudeValue, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_altitudeValue, LV_FLEX_FLOW_COLUMN_WRAP);
     lv_obj_set_flex_align(ui_altitudeValue, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_label_set_text(ui_altitudeValue, "113");
+    lv_label_set_text(ui_altitudeValue, "113.82");
     lv_obj_remove_flag(ui_altitudeValue,
                        LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SNAPPABLE |
                        LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM |
@@ -492,7 +498,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_height(ui_courseContainer, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_flex_grow(ui_courseContainer, 1);
     lv_obj_set_align(ui_courseContainer, LV_ALIGN_CENTER);
-    lv_obj_set_flex_flow(ui_courseContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(ui_courseContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_courseContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_remove_flag(ui_courseContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
@@ -502,7 +508,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_align(ui_courseValue, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_courseValue, LV_FLEX_FLOW_COLUMN_WRAP);
     lv_obj_set_flex_align(ui_courseValue, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_label_set_text(ui_courseValue, "189");
+    lv_label_set_text(ui_courseValue, "189.09");
     lv_obj_remove_flag(ui_courseValue, LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE |
                        LV_OBJ_FLAG_SNAPPABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM |
                        LV_OBJ_FLAG_SCROLL_CHAIN);     /// Flags
@@ -524,6 +530,16 @@ void ui_Screen1_screen_init(void)
     lv_label_set_text(ui_courseUnits, "°");
     lv_obj_set_style_text_color(ui_courseUnits, lv_color_hex(0x6287F8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_courseUnits, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_gpsCourseArrow = lv_image_create(ui_Screen1);
+    lv_image_set_src(ui_gpsCourseArrow, &ui_img_arrow_png);
+    lv_obj_set_width(ui_gpsCourseArrow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_gpsCourseArrow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_gpsCourseArrow, 116);
+    lv_obj_set_y(ui_gpsCourseArrow, 2);
+    lv_obj_set_align(ui_gpsCourseArrow, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_gpsCourseArrow, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_remove_flag(ui_gpsCourseArrow, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
 }
 
@@ -572,5 +588,6 @@ void ui_Screen1_screen_destroy(void)
     ui_courseContainer = NULL;
     ui_courseValue = NULL;
     ui_courseUnits = NULL;
+    ui_gpsCourseArrow = NULL;
 
 }

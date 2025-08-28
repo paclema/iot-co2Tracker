@@ -139,6 +139,7 @@ void Co2Tracker::loop() {
           lv_label_set_text(ui_speedValue, String(gps.speed.kmph()).c_str());
           lv_label_set_text(ui_altitudeValue, String(gps.altitude.meters()).c_str());
           lv_label_set_text(ui_courseValue, String(gps.course.deg()).c_str());
+          lv_img_set_angle(ui_gpsCourseArrow, (int16_t)(gps.course.deg() * 10));
 
           if (localLogs) logGPS();
 
