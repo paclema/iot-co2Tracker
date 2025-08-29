@@ -35,8 +35,6 @@
 // #include <loraFunctions.h>
 #include <LoRaWANClient.h>
 #include <LoRaWANClientCallback.h>
-#include <CayenneLPP.h>
-#define CAYENNE_MAX_PAYLOAD_SIZE    64
 
 
 #ifdef ARDUINO_IOTPOSTBOX_V1
