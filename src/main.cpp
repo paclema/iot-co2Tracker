@@ -214,12 +214,12 @@ void setup() {
 }
 
 void loop() {
-  currentLoopMillis = millis();
   
   lvHandlerTimerStart = millis();
   lv_timer_handler();
   lvHandlerTimerElapsed = millis() - lvHandlerTimerStart;
 
+  currentLoopMillis = millis();
   if (currentLoopMillis - previousSPIFFSLoopMillis > SPIFFS_CHECK_SPACE_TIME){
     previousSPIFFSLoopMillis = currentLoopMillis;
     totalBytes = LittleFS.totalBytes();
