@@ -80,35 +80,36 @@ public:
 private:
     LoRaWANClient lorawan;
     MQTTClient* pMQTTClient = nullptr;
+
+    //Main sensor and state variables:
     SCD30 airSensor;
+    struct CO2Data {
+        uint16_t co2 = 0;
+        float temp = 0;
+        float hum = 0;
+    } co2Data;
+    bool airSensorFirstMeasurement = false;
+
     TinyGPSPlus gps;
+    TaskHandle_t gpsTaskHandle = nullptr;
+    static void gpsTask(void* pvParameters);
     const int timeZoneoffset = 2; // Madrid UTC +2
     static const uint32_t GPSBaud = 9600;
     SoftwareSerial ss;
 
-    //Main sensor and state variables:
-    uint16_t co2 = 0;
-    float temp = 0;
-    float hum = 0;
-    bool airSensorFirstMeasurement = false;
-
-    double lat = 0;
-    double lng = 0;
-    uint32_t gpsDate = 0;
-    uint32_t gpsTime = 0;
-    double gpsSpeed = 0;
-    uint32_t gpsSat = 0;
-    double gpsAltitude = 0;
-    double gpsHdop = 0;
-    double gpsCourse = 0;
 
     String topic = "";
     unsigned long lastGPSPublish = 0UL;
 
 
     void initSCD30(void);
+
     void initGPS(void);
     void logGPS(void);
+    bool GPSDataValid(void);
+    void publishGPSData(void);
+
+    void publishMQTT(bool publishCo2, bool publishGPS);
 
 };
 
