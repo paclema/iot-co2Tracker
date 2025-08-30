@@ -214,6 +214,8 @@ void setup() {
 }
 
 void loop() {
+  currentLoopMillis = millis();
+  
   lvHandlerTimerStart = millis();
   lv_timer_handler();
   lvHandlerTimerElapsed = millis() - lvHandlerTimerStart;
