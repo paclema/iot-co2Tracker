@@ -79,6 +79,8 @@ public:
 
 private:
     LoRaWANClient lorawan;
+    uint8_t appeui[8] = {0};
+    uint8_t deveui[8] = {0};
     uint8_t appkey[16] = {0};
     
     MQTTClient* pMQTTClient = nullptr;

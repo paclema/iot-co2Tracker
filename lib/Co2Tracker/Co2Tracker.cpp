@@ -101,6 +101,8 @@ void Co2Tracker::begin() {
     );
   }
 
+  lorawan.setAppEui(appeui);
+  lorawan.setDevEui(deveui);
   lorawan.setAppKey(appkey);
   lorawan.begin();
 }
@@ -111,6 +113,7 @@ void Co2Tracker::parseWebConfig(JsonObjectConst configObject) {
   publishLoraWan = configObject["publish_LoRaWAN"] | true;
 
   // LoRaWAN variable objects parsing
+  // APPKEY
   if (configObject.containsKey("APPKEY")) {
       JsonArrayConst keyArray = configObject["APPKEY"].as<JsonArrayConst>();
       int idx = 0;
@@ -123,10 +126,36 @@ void Co2Tracker::parseWebConfig(JsonObjectConst configObject) {
       ESP_LOGE("Co2Tracker", "No LoRaWAN APPKEY found in configuration file!");
   }
 
+  // DEVEUI
+  if (configObject.containsKey("DEVEUI")) {
+      JsonArrayConst keyArray = configObject["DEVEUI"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 8) deveui[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 8)  ESP_LOGE("Co2Tracker", "DEVEUI must have exactly 8 elements! Received: %d", idx);
+      if (keyArray.size() > 8) ESP_LOGE("Co2Tracker", "DEVEUI has more than 8 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN DEVEUI found in configuration file!");
+  }
+
+  // APPEUI
+  if (configObject.containsKey("APPEUI")) {
+      JsonArrayConst keyArray = configObject["APPEUI"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 8) appeui[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 8)  ESP_LOGE("Co2Tracker", "APPEUI must have exactly 8 elements! Received: %d", idx);
+      if (keyArray.size() > 8) ESP_LOGE("Co2Tracker", "APPEUI has more than 8 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN APPEUI found in configuration file!");
+  }
+
   Serial.printf("Co2Tracker: localLogs: %s, publishGPSdata: %s, publishLoraWan: %s\n", 
-              localLogs ? "true" : "false", 
-              publishGPSdata ? "true" : "false", 
-              publishLoraWan ? "true" : "false");
+            localLogs ? "true" : "false", 
+            publishGPSdata ? "true" : "false", 
+            publishLoraWan ? "true" : "false");
 }
 
 void Co2Tracker::onConnected(MQTTClient* client) {
