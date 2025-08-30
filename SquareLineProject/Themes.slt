@@ -1,0 +1,140 @@
+{
+  "deftheme": {
+    "name": "Default",
+    "properties": [
+      {
+        "nid": 1000206,
+        "strtype": "THEME_COLOR",
+        "strval": "background",
+        "intarray": [
+          56,
+          62,
+          101,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000207,
+        "strtype": "THEME_COLOR",
+        "strval": "backgroundLines",
+        "intarray": [
+          98,
+          135,
+          248,
+          220
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000208,
+        "strtype": "THEME_COLOR",
+        "strval": "values",
+        "intarray": [
+          115,
+          255,
+          254,
+          255
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000209,
+        "strtype": "THEME_COLOR",
+        "strval": "lines1",
+        "intarray": [
+          251,
+          246,
+          101,
+          220
+        ],
+        "InheritedType": 0
+      },
+      {
+        "nid": 1000210,
+        "strtype": "THEME_COLOR",
+        "strval": "lines2",
+        "intarray": [
+          255,
+          110,
+          33,
+          255
+        ],
+        "InheritedType": 0
+      }
+    ]
+  },
+  "themes": [
+    {
+      "name": "theme1",
+      "properties": [
+        {
+          "nid": 1000206,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "background",
+          "intarray": [
+            56,
+            62,
+            101,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000207,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "backgroundLines",
+          "intarray": [
+            98,
+            135,
+            248,
+            220
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000208,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "values",
+          "intarray": [
+            115,
+            255,
+            254,
+            255
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000209,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "lines1",
+          "intarray": [
+            251,
+            246,
+            101,
+            220
+          ],
+          "InheritedType": 0
+        },
+        {
+          "nid": 1000210,
+          "flags": 2097152,
+          "strtype": "THEME_COLOR",
+          "strval": "lines2",
+          "intarray": [
+            255,
+            110,
+            33,
+            255
+          ],
+          "InheritedType": 0
+        }
+      ]
+    }
+  ],
+  "selected_theme": "Default"
+}

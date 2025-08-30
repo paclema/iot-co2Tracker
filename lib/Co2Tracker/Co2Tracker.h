@@ -27,23 +27,14 @@
 
 #define GPS_DATA_PUBLISH_TIME 10000
 
-// OLED screen
-#include <Adafruit_SSD1306.h>
-#define SCREEN_WIDTH 128       // OLED display width, in pixels
-#define SCREEN_HEIGHT 64       // OLED display height, in pixels
-#define OLED_RESET -1          //Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C    //See datasheet for Address
-
-// TFT SPI screen
-#include <TFT_eSPI.h>
-// #include <SPI.h>
+// LVGL UI
+#include <lvgl.h>
+#include "ui.h"
 
 //Lora and TTN
 // #include <loraFunctions.h>
 #include <LoRaWANClient.h>
 #include <LoRaWANClientCallback.h>
-#include <CayenneLPP.h>
-#define CAYENNE_MAX_PAYLOAD_SIZE    64
 
 
 #ifdef ARDUINO_IOTPOSTBOX_V1
@@ -65,6 +56,7 @@ public:
 
     // MQTTClientCallback
     void onConnected(MQTTClient* client) override;
+    void onDisconnected(MQTTClient* client) override;
 
     // LoRaWANClientCallback
     void onTxComplete(LoRaWANClient* client) {
@@ -73,8 +65,11 @@ public:
     void onDownlinkReceived(LoRaWANClient* client, const lorawan_event_data* data) override {
         ESP_LOGW("Co2Tracker", "LoRaWAN Downlink received: %.*s", data->data_len, data->data);
     }
+    void onJoinSuccess(LoRaWANClient* client) override {
+        ESP_LOGW("Co2Tracker", "LoRaWAN Join Success");
+        lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    }
     // void onEvent(LoRaWANClient* client, ev_t event) override {}
-    void sendLoraCayenne();
     void sendLoraBinary();
     
     // Flags configurables
@@ -84,43 +79,41 @@ public:
 
 private:
     LoRaWANClient lorawan;
+    uint8_t appeui[8] = {0};
+    uint8_t deveui[8] = {0};
+    uint8_t appkey[16] = {0};
+    
     MQTTClient* pMQTTClient = nullptr;
+
+    //Main sensor and state variables:
     SCD30 airSensor;
+    struct CO2Data {
+        uint16_t co2 = 0;
+        float temp = 0;
+        float hum = 0;
+    } co2Data;
+    bool airSensorFirstMeasurement = false;
+
     TinyGPSPlus gps;
+    TaskHandle_t gpsTaskHandle = nullptr;
+    static void gpsTask(void* pvParameters);
     const int timeZoneoffset = 2; // Madrid UTC +2
     static const uint32_t GPSBaud = 9600;
     SoftwareSerial ss;
-    Adafruit_SSD1306 display;
-    TFT_eSPI tft;
-    // TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
 
-    //Main sensor and state variables:
-    uint16_t co2 = 0;
-    float temp = 0;
-    float hum = 0;
-    bool airSensorFirstMeasurement = false;
-
-    double lat = 0;
-    double lng = 0;
-    uint32_t gpsDate = 0;
-    uint32_t gpsTime = 0;
-    double gpsSpeed = 0;
-    uint32_t gpsSat = 0;
-    double gpsAltitude = 0;
-    double gpsHdop = 0;
-    double gpsCourse = 0;
 
     String topic = "";
     unsigned long lastGPSPublish = 0UL;
 
-    // Métodos privados de inicialización y display
-    void initSCD30();
-    void initOLED();
-    void initGPS();
-    void updateDisplay();
-    void updateTFT();
-    void displayNoData();
-    void logGPS();
+
+    void initSCD30(void);
+
+    void initGPS(void);
+    void logGPS(void);
+    bool GPSDataValid(void);
+    void publishGPSData(void);
+
+    void publishMQTT(bool publishCo2, bool publishGPS);
 
 };
 

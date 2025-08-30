@@ -1,12 +1,24 @@
 #include "Co2Tracker.h"
 
+
+void Co2Tracker::gpsTask(void* pvParameters) {
+    Co2Tracker* self = static_cast<Co2Tracker*>(pvParameters);
+    for (;;) {
+        while (self->ss.available() > 0) {
+            self->gps.encode(self->ss.read());
+        }
+        vTaskDelay(1);
+    }
+}
+
 Co2Tracker::Co2Tracker()
-    : ss(GPS_RX_PIN, GPS_TX_PIN),
-      display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET),
-      tft()
+    : ss(GPS_RX_PIN, GPS_TX_PIN)
 {
-    // TFT_eSPI tft = TFT_eSPI(); 
     lorawan.addCallback(this);
+
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    lv_obj_set_style_img_opa(ui_mqttImg, 100, LV_PART_MAIN);
+
 }
 
 void Co2Tracker::initSCD30(void){
@@ -53,15 +65,6 @@ void Co2Tracker::initSCD30(void){
 
 }
 
-void Co2Tracker::initOLED(void){
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)){
-    ESP_LOGE("OLED", "SSD1306 allocation failed");
-    // for (;;); // Don't proceed, loop forever
-  }
-  display.clearDisplay();
-  display.display();
-
-}
 void Co2Tracker::initGPS(void){
   Serial.print(F("TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
   Serial.println();
@@ -75,37 +78,33 @@ void Co2Tracker::setMQTTClient(MQTTClient * client) {
 }
 
 void Co2Tracker::begin() {
-    #ifdef ARDUINO_IOTPOSTBOX_V1
-        // while(!Serial) {}
-        pinMode(LDO2_EN_PIN, OUTPUT);
-        digitalWrite(LDO2_EN_PIN, HIGH);
-        // power.setup();
-    #endif
+  #ifdef ARDUINO_IOTPOSTBOX_V1
+      // while(!Serial) {}
+      pinMode(LDO2_EN_PIN, OUTPUT);
+      digitalWrite(LDO2_EN_PIN, HIGH);
+      // power.setup();
+  #endif
 
-    // SCD30 and GPS setup:
-    initOLED();
-    displayNoData();
-    initGPS();
-    delay(100);
-    initSCD30();
+  // SCD30 and GPS setup:
+  initGPS();
+  initSCD30();
 
-    tft.init();
-    // tft.setRotation(3);
-    tft.setRotation(1);
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.fillScreen(TFT_BLACK);
-    // tft.drawFloat(4658/1000, 3, 160, 120, 6);
-    tft.drawString("Starting...", 20, 20,4);
-    delay(1000);
-    // plotLinear("A00", 0, 160);
-    // plotLinear("A1", 1 * d, 160);
-    // plotLinear("A2", 2 * d, 160);
-    // plotLinear("A3", 3 * d, 160);
-    // plotLinear("A4", 4 * d, 160);
-    // plotLinear("A5", 5 * d, 160);
+  if (gpsTaskHandle == nullptr) {
+    xTaskCreatePinnedToCore(
+      gpsTask,
+      "gpsTask",
+      2048,
+      this,
+      2,
+      &gpsTaskHandle,
+      0
+    );
+  }
 
-    lorawan.begin();
+  lorawan.setAppEui(appeui);
+  lorawan.setDevEui(deveui);
+  lorawan.setAppKey(appkey);
+  lorawan.begin();
 }
 
 void Co2Tracker::parseWebConfig(JsonObjectConst configObject) {
@@ -113,10 +112,50 @@ void Co2Tracker::parseWebConfig(JsonObjectConst configObject) {
   publishGPSdata = configObject["publish_gps_data"] | false;
   publishLoraWan = configObject["publish_LoRaWAN"] | true;
 
+  // LoRaWAN variable objects parsing
+  // APPKEY
+  if (configObject.containsKey("APPKEY")) {
+      JsonArrayConst keyArray = configObject["APPKEY"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 16) appkey[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 16)  ESP_LOGE("Co2Tracker", "APPKEY must have exactly 16 elements! Received: %d", idx);
+      if (keyArray.size() > 16) ESP_LOGE("Co2Tracker", "APPKEY has more than 16 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN APPKEY found in configuration file!");
+  }
+
+  // DEVEUI
+  if (configObject.containsKey("DEVEUI")) {
+      JsonArrayConst keyArray = configObject["DEVEUI"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 8) deveui[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 8)  ESP_LOGE("Co2Tracker", "DEVEUI must have exactly 8 elements! Received: %d", idx);
+      if (keyArray.size() > 8) ESP_LOGE("Co2Tracker", "DEVEUI has more than 8 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN DEVEUI found in configuration file!");
+  }
+
+  // APPEUI
+  if (configObject.containsKey("APPEUI")) {
+      JsonArrayConst keyArray = configObject["APPEUI"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 8) appeui[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 8)  ESP_LOGE("Co2Tracker", "APPEUI must have exactly 8 elements! Received: %d", idx);
+      if (keyArray.size() > 8) ESP_LOGE("Co2Tracker", "APPEUI has more than 8 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN APPEUI found in configuration file!");
+  }
+
   Serial.printf("Co2Tracker: localLogs: %s, publishGPSdata: %s, publishLoraWan: %s\n", 
-                localLogs ? "true" : "false", 
-                publishGPSdata ? "true" : "false", 
-                publishLoraWan ? "true" : "false");
+            localLogs ? "true" : "false", 
+            publishGPSdata ? "true" : "false", 
+            publishLoraWan ? "true" : "false");
 }
 
 void Co2Tracker::onConnected(MQTTClient* client) {
@@ -126,307 +165,137 @@ void Co2Tracker::onConnected(MQTTClient* client) {
   String msg = "connected = true";
   client->publish(pMQTTClient->getBaseTopic().c_str(), msg.c_str());
 
+  lv_obj_set_style_img_opa(ui_mqttImg, 255, LV_PART_MAIN);
+
+}
+
+void Co2Tracker::onDisconnected(MQTTClient* client) {
+  lv_obj_set_style_img_opa(ui_mqttImg, 100, LV_PART_MAIN);
+}
+
+bool Co2Tracker::GPSDataValid() {
+  if (gps.location.isValid() 
+    && gps.location.lat() != 0 && gps.location.lng() != 0
+    && gps.date.isValid() && gps.time.isValid()
+    // && gps.date.year() == 2022 && ( gps.date.month() == 7 || gps.date.month() == 8 )
+  ){
+      return true;
+  }
+  return false;
+}
+
+void Co2Tracker::publishGPSData(void) {
+  if (GPSDataValid()) {
+    if (publishLoraWan) sendLoraBinary();
+    if (localLogs) logGPS();
+    if (pMQTTClient && pMQTTClient->connected()) publishMQTT(false, true);
+  }
+}
+
+
+void Co2Tracker::publishMQTT(bool publishCo2, bool publishGPS) {
+  String msg_pub;
+  StaticJsonDocument<256> doc;
+
+  if (publishCo2) {
+    doc["CO2"] = co2Data.co2;
+    doc["temp"] = co2Data.temp;
+    doc["humidity"] = co2Data.hum;
+  }
+  if (publishGPS) {
+    doc["lat"] = gps.location.lat();
+    doc["lng"] = gps.location.lng();
+    doc["date"] = gps.date.value();
+    doc["time"] = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000;
+    doc["speed"] = gps.speed.kmph();
+    doc["satellites"] = gps.satellites.value();
+    doc["altitude"] = gps.altitude.meters();
+    doc["hdop"] = gps.hdop.hdop();
+    doc["course"] = gps.course.deg();
+  }
+  doc["rssi_STA"] = WiFi.RSSI();
+  #ifdef ARDUINO_IOTPOSTBOX_V1
+  doc["vBat"] = (float)power.vBatSense.mV/1000;
+  doc["vBus"] = (float)power.vBusSense.mV/1000;
+  doc["PowerStatus"] = (int)power.getPowerStatus();
+  doc["ChargingStatus"] = (int)power.getChargingStatus();
+  #endif
+  serializeJson(doc, msg_pub);
+  // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
+  pMQTTClient->publish(topic.c_str(), msg_pub.c_str());
+  // Serial.println(msg_pub);
 }
 
 void Co2Tracker::loop() {
-
-  // Check GPS location:
-  while (ss.available() > 0)
-      gps.encode(ss.read());
-
-  if (gps.charsProcessed() < 10)
-      Serial.println(F("WARNING: No GPS data.  Check wiring."));
-
   unsigned long currentMillis = millis();
 
-  if (currentMillis - lastGPSPublish > GPS_DATA_PUBLISH_TIME) {
-      lastGPSPublish = currentMillis;
+  // GPS UI Update
+  bool satellitesUpdated = gps.satellites.isUpdated();
+  bool speedUpdated = gps.speed.isUpdated();
+  bool altitudeUpdated = gps.altitude.isUpdated();
+  bool courseUpdated = gps.course.isUpdated();
 
-      // if (gps.location.isUpdated()){
-      //   Serial.printf("---> NEW GPS location: %lf - %lf\n", gps.location.lat(), gps.location.lng());
-      // } 
-      // if (gps.speed.isUpdated()){
-      //   Serial.printf("---> NEW GPS speed: %lf\n", gps.speed.kmph());
-      // }
-
-      if (publishLoraWan) sendLoraBinary();
-
-      if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid()) {
-          if (localLogs) logGPS();
-
-          // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
-          // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
-          // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
-
-          if (pMQTTClient && pMQTTClient->connected()) {
-              String msg_pub;
-              StaticJsonDocument<256> doc;
-
-              doc["lat"] = lat;
-              doc["lng"] = lng;
-              doc["date"] = gpsDate;
-              doc["time"] = gpsTime;
-              doc["speed"] = gpsSpeed;
-              doc["satellites"] = gpsSat;
-              doc["altitude"] = gpsAltitude;
-              doc["hdop"] = gpsHdop;
-              doc["course"] = gpsCourse;
-              doc["rssi_STA"] = WiFi.RSSI();
-              #ifdef ARDUINO_IOTPOSTBOX_V1
-              doc["vBat"] = (float)power.vBatSense.mV/1000;
-              doc["vBus"] = (float)power.vBusSense.mV/1000;
-              doc["PowerStatus"] = (int)power.getPowerStatus();
-              doc["ChargingStatus"] = (int)power.getChargingStatus();
-              #endif
-              serializeJson(doc, msg_pub);
-              // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
-              pMQTTClient->publish(topic.c_str(), msg_pub.c_str());
-              // Serial.println(msg_pub);
-          }
-      } else {
-          displayNoData();
-      }
+  // Update UI GPS elements only if their respective values are updated
+  if (satellitesUpdated)  lv_label_set_text(ui_gpsSat, String(gps.satellites.value()).c_str());
+  if (speedUpdated)       lv_label_set_text(ui_speedValue, String(gps.speed.kmph()).c_str());
+  if (altitudeUpdated)    lv_label_set_text(ui_altitudeValue, String(gps.altitude.meters()).c_str());
+  if (courseUpdated) {
+    lv_label_set_text(ui_courseValue, String(gps.course.deg()).c_str());
+    lv_img_set_angle(ui_gpsCourseArrow, (int16_t)(gps.course.deg() * 10));
   }
 
+  if ( satellitesUpdated || speedUpdated || altitudeUpdated || courseUpdated) {
+    String updatedFields;
+    if (satellitesUpdated)  updatedFields += "satellites ";
+    if (speedUpdated)       updatedFields += "speed ";
+    if (altitudeUpdated)    updatedFields += "altitude ";
+    if (courseUpdated)      updatedFields += "course ";
+    ESP_LOGD("Co2Tracker", "GPS UI Updates: %s", updatedFields.c_str());
+  }
+
+  
+  // GPS data publishing
+  if (currentMillis - lastGPSPublish > GPS_DATA_PUBLISH_TIME) {
+      lastGPSPublish = currentMillis;
+      Co2Tracker::publishGPSData();
+  }
+
+
+  // Co2 Sensor update
   if (airSensor.dataAvailable()) {
-      co2 = airSensor.getCO2();
-      temp = airSensor.getTemperature();
-      hum = airSensor.getHumidity();
-      airSensorFirstMeasurement = true;
+    co2Data.co2 = airSensor.getCO2();
+    co2Data.temp = airSensor.getTemperature();
+    co2Data.hum = airSensor.getHumidity();
+    airSensorFirstMeasurement = true;
 
-      Serial.print("co2(ppm):");
-      Serial.print(co2);
-      Serial.print(" temp(C):");
-      Serial.print(temp, 1);
-      Serial.print(" humidity(%):");
-      Serial.print(hum, 1);
-      Serial.println();
+    Serial.print("co2(ppm):");
+    Serial.print(co2Data.co2);
+    Serial.print(" temp(C):");
+    Serial.print(co2Data.temp, 1);
+    Serial.print(" humidity(%):");
+    Serial.print(co2Data.hum, 1);
+    Serial.println();
 
-      bool GPSdataValid = false;
-      if (gps.location.isValid() && gps.location.lat() != 0 && gps.location.lng() != 0 && gps.date.isValid() && gps.time.isValid() 
-      // && gps.date.year() == 2022 && (gps.date.month() == 7 || gps.date.month() == 8)){
-      ){
-          logGPS();
-          GPSdataValid = true;
-          // Serial.printf("Lat: %lf - Long: %lf - Date: %zu - Time: %zu - Spped: %lf km/h\n", lat, lng, gpsDate, gpsTime, gpsSpeed);
-          // Serial.printf("****** - Time: %zu secs: %d -age %d- Time+age: %d \n", gpsTime, gps.time.second(),  gps.time.age(), (gpsTime + gps.time.age()/10));
-          // Serial.printf("Satellites: %zu - Altitude: %lf - Hdop: %lf - Course: %lf\n", gpsSat, gpsAltitude, gpsHdop, gpsCourse);
-      } else {
-          updateTFT();
-          ESP_LOGE("SCD30", "Failed logGPS while CO2 measurement");
-      }
+    lv_label_set_text(ui_co2Value, String(co2Data.co2).c_str());
+    lv_label_set_text(ui_tempValue, String(co2Data.temp).c_str());
+    lv_label_set_text(ui_humValue, String(co2Data.hum).c_str());
 
-      updateTFT();
-
-      if (pMQTTClient && pMQTTClient->connected()) {
-          String msg_pub;
-          StaticJsonDocument<256> doc;
-
-          doc["CO2"] = co2;
-          doc["temp"] = temp;
-          doc["humidity"] = hum;
-
-          if (GPSdataValid && publishGPSdata) {
-              doc["lat"] = lat;
-              doc["lng"] = lng;
-              doc["date"] = gpsDate;
-              doc["time"] = gpsTime;
-              doc["speed"] = gpsSpeed;
-              doc["satellites"] = gpsSat;
-              doc["altitude"] = gpsAltitude;
-              doc["hdop"] = gpsHdop;
-              doc["course"] = gpsCourse;
-          }
-          doc["rssi_STA"] = WiFi.RSSI();
-          #ifdef ARDUINO_IOTPOSTBOX_V1
-          doc["vBat"] = (float)power.vBatSense.mV/1000;
-          doc["vBus"] = (float)power.vBusSense.mV/1000;
-          doc["PowerStatus"] = (int)power.getPowerStatus();
-          doc["ChargingStatus"] = (int)power.getChargingStatus();
-          #endif
-          serializeJson(doc, msg_pub);
-          // mqttClient->setBufferSize((uint16_t)(msg_pub.length() + 100));  // Only using PubSubClient
-          pMQTTClient->publish(topic.c_str(), msg_pub.c_str());
-          // Serial.println(msg_pub);
-
-      }
+    if (pMQTTClient && pMQTTClient->connected()) publishMQTT(true, GPSDataValid());
   }
 
   lorawan.loop();
 }
 
-void Co2Tracker::updateDisplay(void){
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(3);
-  display.print(gpsSpeed);
-
-  display.setCursor(75, 20);
-  display.setTextSize(2);
-  display.print("km/h");
-
-  display.setTextSize(1);
-  display.setCursor(0, 30);
-  display.print("Co2:");
-  display.setCursor(25, 30);
-  display.print(co2);
-
-  display.setTextSize(1);
-  display.setCursor(0, 40);
-  display.print("vBat:");
-  display.setCursor(30, 40);
-  display.print(String((float)power.vBatSense.mV/1000,3));
-
-  display.setTextSize(1);
-  display.setCursor(0, 50);
-  display.print("vBus:");
-  display.setCursor(30, 50);
-  display.print(String((float)power.vBusSense.mV/1000,3));
-
-  display.setTextSize(1);
-  display.setCursor(70, 40);
-  display.print("SAT:");
-  display.setCursor(95, 40);
-  display.print(gpsSat);
-
-  display.setTextSize(1);
-  display.setCursor(70, 50);
-  display.print("ALT:");
-  display.setCursor(95, 50);
-  display.print(gpsAltitude, 0);
-
-  display.display();
-
-  tft.fillScreen(TFT_BLACK);
-  tft.drawFloat(power.vBatSense.mV/1000, 3, 160, 120, 6);
-
-}
-
-
-
-void Co2Tracker::updateTFT(void){
-  // display.clearDisplay();
-  // display.setCursor(0, 0);
-  // display.setTextSize(3);
-  // display.print(gpsSpeed);
-
-  // display.setCursor(75, 20);
-  // display.setTextSize(2);
-  // display.print("km/h");
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 30);
-  // display.print("Co2:");
-  // display.setCursor(25, 30);
-  // display.print(co2);
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 40);
-  // display.print("vBat:");
-  // display.setCursor(30, 40);
-  // display.print(String((float)power.vBatSense.mV/1000,3));
-
-  // display.setTextSize(1);
-  // display.setCursor(0, 50);
-  // display.print("vBus:");
-  // display.setCursor(30, 50);
-  // display.print(String((float)power.vBusSense.mV/1000,3));
-
-  // display.setTextSize(1);
-  // display.setCursor(70, 40);
-  // display.print("SAT:");
-  // display.setCursor(95, 40);
-  // display.print(gpsSat);
-
-  // display.setTextSize(1);
-  // display.setCursor(70, 50);
-  // display.print("ALT:");
-  // display.setCursor(95, 50);
-  // display.print(gpsAltitude, 0);
-
-  // display.display();
-
-
-  /*
-  TL_DATUM = Top left
-  TC_DATUM = Top centre
-  TR_DATUM = Top right
-  ML_DATUM = Middle left
-  MC_DATUM = Middle centre
-  MR_DATUM = Middle right
-  BL_DATUM = Bottom left
-  BC_DATUM = Bottom centre
-  BR_DATUM = Bottom right*/
-
-  // tft.fillScreen(TFT_BLACK);
-  // tft.drawString("Speed:", 20, 20,4);
-  // tft.drawFloat(gpsSpeed, 3, 120, 20, 4);
-  tft.drawString("Speed: " + String(gpsSpeed), 20, 20,4);
-
-  tft.drawString("Co2: " + String(co2), 20, 50,4);
-  // tft.drawFloat(co2, 100, 100, 4);
-
-  tft.drawString("vBat: " + String(power.vBatSense.mV/1000,3), 20, 80,4);
-  // tft.drawFloat(power.vBatSense.mV/1000, 3, 40, 120, 5);
-
-    // Find centre of screen
-  // uint16_t x = tft.width()/2;
-  // uint16_t y = tft.height()/2;
-
-  // Set datum to Middle Right
-  // tft.setTextDatum(MR_DATUM);
-
-  // Set the padding to the maximum width that the digits could occupy in font 4
-  // This ensures small numbers obliterate large ones on the screen
-  // tft.setTextPadding( tft.textWidth("-88.88", 4) );
-
-  // Creat a random signed floating point number in range -15 to +15
-  // float fpn = random(91)/3.0 - 15.0;
-
-  // Draw a floating point number with 2 decimal places with right datum in font 4
-  // tft.drawFloat( fpn, 2, x, y, 4);
-
-  // Reset text padding to 0 otherwise all future rendered strings will use it!
-  // tft.setTextPadding(0);
-  
-  // Set datum to Middle Left
-  // tft.setTextDatum(ML_DATUM);
-
-  // Draw text with left datum in font 4
-  // tft.drawString(" Units", x, y, 4);
-
-Serial.println("Updating TFT");
-}
-
-void Co2Tracker::displayNoData(){
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.setTextSize(3);
-    display.print("No Data");
-    display.display();
-}
 
 void Co2Tracker::logGPS(void){
   std::stringstream fileName;
   char timeBuffer[16];
-  
-  lat = gps.location.lat();
-  lng = gps.location.lng();
-  gpsDate = gps.date.value();
-  gpsTime = gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000;
-  gpsSpeed = gps.speed.kmph();
-
-  gpsSat = gps.satellites.value();
-  gpsAltitude = gps.altitude.meters();
-  gpsHdop = gps.hdop.hdop();
-  gpsCourse = gps.course.deg();
 
   // setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
   // adjustTime(timeZoneoffset * SECS_PER_HOUR);
 
   // updateDisplay();
-  updateTFT();
+  // updateTFT();
   
   // Create file if it does not exists
   fileName << "/GPS_" << (int)gps.date.year() << "_" << (int)gps.date.month()<< "_" << (int)gps.date.day() << ".csv";
@@ -449,140 +318,31 @@ void Co2Tracker::logGPS(void){
 
   // write file and position
   String newLine;
-  newLine += String((uint32_t)gps.time.isValid()?gpsTime:0) + ",";
-  newLine += String((double)gps.location.isValid()?lat:0.0f, 8) + ",";
-  newLine += String((double)gps.location.isValid()?lng:0.0f, 8) + ",";
-  newLine += String((double)gps.altitude.isValid()?gpsAltitude:0.0f, 1) + ",";
-  newLine += String((double)gps.speed.isValid()?gpsSpeed:0.0f, 3) + ",";
-  newLine += String((double)gps.hdop.isValid()?gpsHdop:0.0f, 2) + ",";
-  newLine += String((int)gps.satellites.isValid()?gpsSat:0) + ",";
-  newLine += String((double)gps.course.isValid()?gpsCourse:0, 1) + ",";
+  newLine += String((uint32_t)gps.time.isValid() ? (gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000) : 0) + ",";
+  newLine += String((double)gps.location.isValid()?gps.location.lat():0.0f, 8) + ",";
+  newLine += String((double)gps.location.isValid()?gps.location.lng():0.0f, 8) + ",";
+  newLine += String((double)gps.altitude.isValid()?gps.altitude.meters():0.0f, 1) + ",";
+  newLine += String((double)gps.speed.isValid()?gps.speed.kmph():0.0f, 3) + ",";
+  newLine += String((double)gps.hdop.isValid()?gps.hdop.hdop():0.0f, 2) + ",";
+  newLine += String((int)gps.satellites.isValid()?gps.satellites.value():0) + ",";
+  newLine += String((double)gps.course.isValid()?gps.course.deg():0, 1) + ",";
   newLine += String((float)(power.vBatSense.mV/1000), 5) + ",";
   newLine += String((float)(power.vBusSense.mV/1000), 5) + ",";
   newLine += String((int)power.getPowerStatus()) + ",";
   newLine += String((int)power.getChargingStatus()) + ",";
-  newLine += String((uint16_t)co2) + ",";
-  newLine += String((float)temp, 2) + ",";
-  newLine += String((float)hum, 2);
+  newLine += String((uint16_t)co2Data.co2) + ",";
+  newLine += String((float)co2Data.temp, 2) + ",";
+  newLine += String((float)co2Data.hum, 2);
   file.println(newLine.c_str());
   file.close();
 
 }
 
-void Co2Tracker::sendLoraCayenne() {
-  CayenneLPP lpp(CAYENNE_MAX_PAYLOAD_SIZE);
-  lpp.reset();
-  // lpp.addAnalogInput(1, (float)wakeUpGPIO);
-  // lpp.addAnalogInput(2, (float)bootCount);
-
-  // lpp.addVoltage(1, power.vBatSense.mV/1000:F); //VCC
-  lpp.addVoltage(2, power.vBatSense.mV/1000.F); //vBat
-  lpp.addVoltage(3, power.vBusSense.mV/1000.F); //vBus
-
-
-  // CO2 sensor:
-  //------------
-  // if(airSensor.dataAvailable()){
-  //   lpp.addConcentration(1, (uint32_t)airSensor.getCO2());
-  //   lpp.addTemperature(1, airSensor.getTemperature());
-  //   lpp.addRelativeHumidity(1, airSensor.getHumidity());
-  // }
-  if(airSensorFirstMeasurement){
-    lpp.addConcentration(1, (uint32_t)co2);
-    lpp.addTemperature(1, temp);
-    lpp.addRelativeHumidity(1, hum);
-  }
-
-
-  // GPS sensor:
-  //------------
-  if(gps.location.isValid() && gps.altitude.isValid()){
-    lpp.addGPS(1, float(gps.location.lat()), float(gps.location.lng()), float(gps.altitude.meters()));
-    Serial.printf("GPS lat: %lf lng: %lf\n", gps.location.lat(),  gps.location.lng());
-  }
-  if(gps.speed.isValid()) lpp.addGenericSensor(1, gps.speed.kmph());
-  if(gps.satellites.isValid()) lpp.addGenericSensor(2, gps.satellites.value());
-  if(gps.hdop.isValid()) lpp.addPercentage(1, gps.hdop.hdop());
-  if(gps.course.isValid()) lpp.addDirection(1, (float)gps.course.deg());
-  if(gps.time.isValid()) lpp.addUnixTime(1, gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000);
-
-
-
-  lorawan.send(lpp.getBuffer(), lpp.getSize());
-
-
-  // Serial.printf("lpp buffer: %.*s\n", lpp.getSize(), (char*)lpp.getBuffer());
-  uint8_t *payload = lpp.getBuffer();
-
-  char buffer[128];
-  String payloadString;
-
-  for (int i = 0; i < lpp.getSize(); i++) {
-  sprintf(buffer, "%02x", payload[i]);
-  payloadString += buffer;
-  }
-  Serial.print("HEX: ");
-  Serial.print(payloadString);
-  Serial.print(" | SIZE: ");
-  Serial.println(payloadString.length());
-
-  Serial.printf("*** Packet queued:\n");
-  DynamicJsonDocument jsonBuffer(1024);
-  JsonObject root = jsonBuffer.to<JsonObject>();
-    
-}
 
 void Co2Tracker::sendLoraBinary() {
   uint8_t payload[34];
   int index = 0;
 
-
-
-  // float vBat = power.vBatSense.mV/1000.F;
-  // float vBus = power.vBusSense.mV/1000.F;
-
-  // CO2 sensor:
-  //------------
-  // uint16_t co2 = co2;
-  // float temp = temp;
-  // float hum = hum;
-
-  // GPS sensor:
-  //------------
-  // double lat = gps.location.lat();
-  // double lng = gps.location.lng();
-  // double altitude = gps.altitude.meters();
-  // double gpsSpeed = gps.speed.kmph();
-  // uint32_t gpsSat = gps.satellites.value();
-  // double gpsHdop = gps.hdop.hdop();
-  // double gpsCourse = gps.course.deg();
-  // uint32_t gpsTime = gps.time.value() + gps.time.age() / 10 + timeZoneoffset * 1000000;
-
-  /*
-  uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
-  uint32_t longitudeBinary = ((gps.location.lng() + 180) / 360.0) * 16777215;
-
-
-  payload[0] = (latitudeBinary >> 16) & 0xFF;
-  payload[1] = (latitudeBinary >> 8) & 0xFF;
-  payload[2] = latitudeBinary & 0xFF;
-
-  payload[3] = (longitudeBinary >> 16) & 0xFF;
-  payload[4] = (longitudeBinary >> 8) & 0xFF;
-  payload[5] = longitudeBinary & 0xFF;
-
-  uint16_t altitudeGps = gps.altitude.meters();
-  payload[6] = (altitudeGps >> 8) & 0xFF;
-  payload[7] = altitudeGps & 0xFF;
-
-  uint8_t hdopGps = gps.hdop.hdop()/10;
-  payload[8] = hdopGps & 0xFF;
-
-  */
-
-
-
-  // Codifica los datos como hacías en publish2TTN()
   uint32_t latitudeBinary = ((gps.location.lat() + 90) / 180.0) * 16777215;
   payload[index++] = (latitudeBinary >> 24) & 0xFF;
   payload[index++] = (latitudeBinary >> 16) & 0xFF;
@@ -629,22 +389,27 @@ void Co2Tracker::sendLoraBinary() {
   payload[index++] = (vBus >> 8) & 0xFF;
   payload[index++] = vBus & 0xFF;
 
-  payload[index++] = (co2 >> 8) & 0xFF;
-  payload[index++] = co2 & 0xFF;
+  payload[index++] = (co2Data.co2 >> 8) & 0xFF;
+  payload[index++] = co2Data.co2 & 0xFF;
 
-  uint16_t tempUint = (uint16_t)(temp * 100);  // 2 decimals. Max number: 655.35
+  uint16_t tempUint = (uint16_t)(co2Data.temp * 100);  // 2 decimals. Max number: 655.35
   payload[index++] = (tempUint >> 8) & 0xFF;
   payload[index++] = tempUint & 0xFF;
 
-  uint16_t humUint = (uint16_t)(hum * 100);  // 2 decimals. Max number: 655.35
+  uint16_t humUint = (uint16_t)(co2Data.hum * 100);  // 2 decimals. Max number: 655.35
   payload[index++] = (humUint >> 8) & 0xFF;
   payload[index++] = humUint & 0xFF;
     
   payload[index++] = (uint8_t)power.getPowerStatus();
   payload[index++] = (uint8_t)power.getChargingStatus();
 
-  lorawan.send(payload, index);
-
+  if(lorawan.send(payload, index)) {
+    // lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    ESP_LOGI("Co2Tracker", "LoRaWAN packet queued");
+  } else {
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    ESP_LOGW("Co2Tracker", "LoRaWAN transmission failed");
+  }
   Serial.printf("Packet queued: size=%d (must be <= %zu)\n", index, sizeof(payload));
   Serial.print("Payload: ");
   for (int i = 0; i < sizeof(payload); i++) {

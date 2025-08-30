@@ -186,3 +186,77 @@ function decodeUplink(input) {
     //return {'fields': lppDecode(bytes, fPort)};
 
 }
+
+
+
+// The encoder in this case on device firmware:
+/*
+void Co2Tracker::sendLoraCayenne() {
+  CayenneLPP lpp(CAYENNE_MAX_PAYLOAD_SIZE);
+  lpp.reset();
+  // lpp.addAnalogInput(1, (float)wakeUpGPIO);
+  // lpp.addAnalogInput(2, (float)bootCount);
+
+  // lpp.addVoltage(1, power.vBatSense.mV/1000:F); //VCC
+  lpp.addVoltage(2, power.vBatSense.mV/1000.F); //vBat
+  lpp.addVoltage(3, power.vBusSense.mV/1000.F); //vBus
+
+
+  // CO2 sensor:
+  //------------
+  // if(airSensor.dataAvailable()){
+  //   lpp.addConcentration(1, (uint32_t)airSensor.getCO2());
+  //   lpp.addTemperature(1, airSensor.getTemperature());
+  //   lpp.addRelativeHumidity(1, airSensor.getHumidity());
+  // }
+  if(airSensorFirstMeasurement){
+    lpp.addConcentration(1, (uint32_t)co2Data.co2);
+    lpp.addTemperature(1, co2Data.temp);
+    lpp.addRelativeHumidity(1, co2Data.hum);
+  }
+
+
+  // GPS sensor:
+  //------------
+  if(gps.location.isValid() && gps.altitude.isValid()){
+    lpp.addGPS(1, float(gps.location.lat()), float(gps.location.lng()), float(gps.altitude.meters()));
+    Serial.printf("GPS lat: %lf lng: %lf\n", gps.location.lat(),  gps.location.lng());
+  }
+  if(gps.speed.isValid()) lpp.addGenericSensor(1, gps.speed.kmph());
+  if(gps.satellites.isValid()) lpp.addGenericSensor(2, gps.satellites.value());
+  if(gps.hdop.isValid()) lpp.addPercentage(1, gps.hdop.hdop());
+  if(gps.course.isValid()) lpp.addDirection(1, (float)gps.course.deg());
+  if(gps.time.isValid()) lpp.addUnixTime(1, gps.time.value() + gps.time.age()/10 + timeZoneoffset*1000000);
+
+
+
+  if(lorawan.send(lpp.getBuffer(), lpp.getSize()))
+    // lv_obj_set_style_img_opa(ui_loraImg, 255, LV_PART_MAIN);
+    ESP_LOGI("Co2Tracker", "LoRaWAN packet queued");
+  else {
+    lv_obj_set_style_img_opa(ui_loraImg, 100, LV_PART_MAIN);
+    ESP_LOGW("Co2Tracker", "LoRaWAN transmission failed");
+  }
+
+
+  // Serial.printf("lpp buffer: %.*s\n", lpp.getSize(), (char*)lpp.getBuffer());
+  uint8_t *payload = lpp.getBuffer();
+
+  char buffer[128];
+  String payloadString;
+
+  for (int i = 0; i < lpp.getSize(); i++) {
+  sprintf(buffer, "%02x", payload[i]);
+  payloadString += buffer;
+  }
+  Serial.print("HEX: ");
+  Serial.print(payloadString);
+  Serial.print(" | SIZE: ");
+  Serial.println(payloadString.length());
+
+  Serial.printf("*** Packet queued:\n");
+  DynamicJsonDocument jsonBuffer(1024);
+  JsonObject root = jsonBuffer.to<JsonObject>();
+    
+}
+*/
