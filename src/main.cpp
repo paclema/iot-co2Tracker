@@ -29,6 +29,8 @@ Co2Tracker* co2Tracker = nullptr;
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <ui.h>
+unsigned long lvHandlerTimerStart = 0;
+unsigned long lvHandlerTimerElapsed = 0;
 
 enum { SCREENBUFFER_SIZE_PIXELS = TFT_WIDTH * TFT_HEIGHT / 10 };
 static lv_color_t buf [SCREENBUFFER_SIZE_PIXELS];
@@ -114,6 +116,7 @@ void powerUpdateTask(void *pvParameters) {
 
 // Websocket functions to publish:
 String getLoopTime(){ return String(currentLoopMillis - previousMainLoopMillis);}
+String getLVGLHandlerElapsed(){ return String(lvHandlerTimerElapsed);}
 String getRSSI(){ return String(WiFi.RSSI());}
 String getHeapFree(){ return String((float)GET_FREE_HEAP/1000);}
 String getMemoryUsageString(){ 
@@ -150,9 +153,9 @@ void setup() {
   lv_tick_set_cb( my_tick_get_cb );
 
   ui_init();
-  lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier, before setup completes ?
+  // lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier, before setup completes ?
 
-  // delay(8000);
+  // delay(3000);
   
   #ifdef ENABLE_SERIAL_DEBUG
     Serial.setDebugOutput(true);
@@ -195,6 +198,7 @@ void setup() {
  
   config.addDashboardObject("heap_free", getHeapFree);
   config.addDashboardObject("loop", getLoopTime);
+  config.addDashboardObject("LVGL_Handler", getLVGLHandlerElapsed);
   config.addDashboardObject("RSSI", getRSSI);
   config.addDashboardObject("SPIFFS_Usage", getMemoryUsageString);
   config.addDashboardObject("SPIFFS_Free", getMemoryFree);
@@ -210,10 +214,10 @@ void setup() {
 }
 
 void loop() {
-
+  lvHandlerTimerStart = millis();
   lv_timer_handler();
+  lvHandlerTimerElapsed = millis() - lvHandlerTimerStart;
 
-  currentLoopMillis = millis();
   if (currentLoopMillis - previousSPIFFSLoopMillis > SPIFFS_CHECK_SPACE_TIME){
     previousSPIFFSLoopMillis = currentLoopMillis;
     totalBytes = LittleFS.totalBytes();
