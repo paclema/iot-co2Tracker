@@ -101,6 +101,7 @@ void Co2Tracker::begin() {
     );
   }
 
+  lorawan.setAppKey(appkey);
   lorawan.begin();
 }
 
@@ -109,10 +110,23 @@ void Co2Tracker::parseWebConfig(JsonObjectConst configObject) {
   publishGPSdata = configObject["publish_gps_data"] | false;
   publishLoraWan = configObject["publish_LoRaWAN"] | true;
 
+  // LoRaWAN variable objects parsing
+  if (configObject.containsKey("APPKEY")) {
+      JsonArrayConst keyArray = configObject["APPKEY"].as<JsonArrayConst>();
+      int idx = 0;
+      for (JsonVariantConst v : keyArray) {
+          if (idx < 16) appkey[idx++] = (uint8_t)strtol(v.as<const char*>(), nullptr, 16);
+      }
+      if (idx != 16)  ESP_LOGE("Co2Tracker", "APPKEY must have exactly 16 elements! Received: %d", idx);
+      if (keyArray.size() > 16) ESP_LOGE("Co2Tracker", "APPKEY has more than 16 elements! Extra elements will be ignored.");
+  } else {
+      ESP_LOGE("Co2Tracker", "No LoRaWAN APPKEY found in configuration file!");
+  }
+
   Serial.printf("Co2Tracker: localLogs: %s, publishGPSdata: %s, publishLoraWan: %s\n", 
-                localLogs ? "true" : "false", 
-                publishGPSdata ? "true" : "false", 
-                publishLoraWan ? "true" : "false");
+              localLogs ? "true" : "false", 
+              publishGPSdata ? "true" : "false", 
+              publishLoraWan ? "true" : "false");
 }
 
 void Co2Tracker::onConnected(MQTTClient* client) {

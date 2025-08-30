@@ -80,7 +80,8 @@
     "co2Tracker": {
         "local_logs": true,
         "publish_gps_data": true,
-        "publish_LoRaWAN": true
+        "publish_LoRaWAN": true,
+        "APPKEY": ["0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00"]
     },
     "device": {
         "track_restart_counter": true,

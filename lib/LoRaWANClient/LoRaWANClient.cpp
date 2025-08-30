@@ -16,7 +16,11 @@ static const u1_t PROGMEM DEVEUI[8]={ PASTE_LSB };
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
 // practice, a key taken from ttnctl can be copied as-is.
-static const u1_t PROGMEM APPKEY[16] = { PASTE_MSB };
+// static const u1_t PROGMEM APPKEY[16] = { PASTE_MSB };
+// Now paste the key under the config.json WebConfigServer config file 
+// as "APPKEY": ["0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00"]
+// and set the new key calling the setAppKey method before beginning the LoRaWAN session
+u1_t APPKEY[16] = { 0 };
 
 extern "C" void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8); }
 extern "C" void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8); }
@@ -44,6 +48,9 @@ LoRaWANClient::LoRaWANClient() {
     LoRaWANClient::instance = this;
 }
 
+void LoRaWANClient::setAppKey(const uint8_t* key) {
+    memcpy(APPKEY, key, 16);
+}
 
 void LoRaWANClient::begin() {
 	log_d("Setting up lora...");

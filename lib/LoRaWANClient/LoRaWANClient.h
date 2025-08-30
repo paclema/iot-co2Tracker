@@ -26,6 +26,8 @@ public:
     LoRaWANClient();
     void onEvent(ev_t ev);
 
+    void setAppKey(const uint8_t* key);
+
     void begin();
     void loop();
     
