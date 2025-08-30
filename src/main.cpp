@@ -143,6 +143,7 @@ void setup() {
 #endif
 
   tft.begin();          /* TFT init */
+  delay(10);
   tft.setRotation( TFT_ROTATION ); /* Landscape orientation, flipped */
 
   static lv_disp_t* disp;
