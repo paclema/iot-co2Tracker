@@ -27,3 +27,6 @@ It provides protection and mounting points for all components, with cutouts for 
 
 **Parametric Design:**  
 The enclosure is fully parametric and can be easily modified by adjusting the variable table in the FreeCAD spreadsheet. This allows you to adapt the case to different hardware layouts or dimensions.
+
+**Assembly:**  
+- Requires 4x M3x5mm screws for mounting.
