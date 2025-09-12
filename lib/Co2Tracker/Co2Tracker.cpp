@@ -195,7 +195,7 @@ void Co2Tracker::publishGPSData(void) {
 
 void Co2Tracker::publishMQTT(bool publishCo2, bool publishGPS) {
   String msg_pub;
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<320> doc;
 
   if (publishCo2) {
     doc["CO2"] = co2Data.co2;

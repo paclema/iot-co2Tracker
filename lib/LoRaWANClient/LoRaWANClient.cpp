@@ -78,7 +78,7 @@ void LoRaWANClient::begin() {
     // Set data rate and transmit power for uplink
     // Set the data rate to Spreading Factor 7.  This is the fastest supported rate for 125 kHz channels, and it
     // minimizes air time and battery power. Set the transmission power to 14 dBi (25 mW).
-    // LMIC_setDrTxpow(DR_SF7,14);
+    LMIC_setDrTxpow(DR_SF7,14);
 
     // Start job (sending automatically starts OTAA too)
     // do_send(&sendjob);

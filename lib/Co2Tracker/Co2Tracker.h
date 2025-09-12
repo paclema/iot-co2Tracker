@@ -25,7 +25,7 @@
   #define GPS_TX_PIN 12 // Wemos D1 mini/pro TX to D5 
 #endif
 
-#define GPS_DATA_PUBLISH_TIME 10000
+#define GPS_DATA_PUBLISH_TIME 5000
 
 // LVGL UI
 #include <lvgl.h>
