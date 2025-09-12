@@ -1,8 +1,10 @@
-# iot-co2Tracker
+# IoT-CO2Tracker
 
 The IoT-CO2Tracker is a compact device that measures CO₂, temperature, and humidity. Initially developed on an ESP8266, it was later moved to an ESP32 using the IoT-PostBox board. The project also serves to validate the board's capabilities, though that is not its primary purpose.
 
 An external GPS module can be connected via the serial port, allowing the device to publish both sensor readings and location data. This data is sent via LoRaWAN to The Things Network (TTN) for coverage and connectivity analysis, and over Wi-Fi using MQTT to your own broker. When needed, GPS tracks are logged to the onboard flash storage and can be downloaded for visualization through a built-in FTP server. The latest hardware revision includes a 2" TFT screen that displays live sensor values, connectivity, and battery status, with a user interface built on LVGL v9 and designed with SquareLine.
+
+![IoT-CO2Tracker](docs/_DSC5541.PNG)
 
 ---
 
