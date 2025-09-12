@@ -76,6 +76,40 @@ Example payload (with GPS):
 }
 ```
 
+### LoRaWAN uplink
+
+| Field            | C type     | Bytes | Units     | Notes |
+|------------------|------------|-------|-----------|-------|
+| latitude         | uint32_t   | 4     | degrees   | 24-bit value scaled to 4 bytes ((lat+90)/180*16777215) |
+| longitude        | uint32_t   | 4     | degrees   | 24-bit value scaled to 4 bytes ((lng+180)/360*16777215) |
+| altitude         | uint16_t   | 2     | m         |  |
+| hdop             | uint16_t   | 2     | HDOP      |  |
+| speed            | uint16_t   | 2     | km/h      | value = km/h × 100 |
+| satellites       | uint8_t    | 1     | count     |  |
+| course           | uint16_t   | 2     | degrees   |  |
+| time             | uint32_t   | 4     | HHMMSScc  | local offset applied |
+| vBat             | uint16_t   | 2     | mV        |  |
+| vBus             | uint16_t   | 2     | mV        |  |
+| CO2              | uint16_t   | 2     | ppm       |  |
+| temp             | uint16_t   | 2     | °C        | value = °C × 100 |
+| hum              | uint16_t   | 2     | %         | value = % × 100 |
+| powerStatus      | uint8_t    | 1     | enum      |  |
+| chargingStatus   | uint8_t    | 1     | enum      |  |
+
+Notes
+- Multi-byte fields are big-endian (MSB first).
+- Latitude/Longitude use 24-bit effective values packed into 4 bytes (high byte may be 0).
+- Total payload length: 33 bytes.
+
+Decoders: see [formaters/](formaters/) for TTN uplink decoders and field mapping.
+
+TTN setup (OTAA, quick)
+1. Create an application `co2Tracker` and register a device.
+2. Set the device DEVEUI, APPEUI, and APPKEY to your `config.json`.
+3. Add the custom uplink decoder from [formaters/custom](formaters/custom) to your TTN application.
+4. Join the device and verify uplinks in the TTN console under the [Application live data tab](https://eu1.cloud.thethings.network/console/applications/co2tracker/data).
+
+
 ### FTP GPS logs
 - If the `local_logs` configuration is enabled in the [config.json](data/config/config.json) file, GPS log files will be created on the LittleFS partition. The file names will follow a specific naming convention, such as [`GPS_2025_9_10.csv`](/docs/GPS_2025_9_10.csv).
 - Connect via FTP to the device server using the username and password configured in [config.json](data/config/config.json) to download the GPS log file.
@@ -113,8 +147,10 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
 ### Backend services
 - Node-RED subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB.
 ![Node-RED_flow](docs/Node-RED_flow.png)
+- Example flow: [backend/nodered/flows.json](backend/nodered/flows.json)
 - Grafana dashboards read from InfluxDB.
 ![Grafana_data_example](docs/Grafana_data_example.png)
+- Example dashboard: [backend/grafana/dashboard.json](backend/grafana/dashboard.json)
 - TTN formatters: see decoders in [formaters/](formaters/) for field mapping.
 
 ---
@@ -143,3 +179,6 @@ Pinout highlights (see [boards/](boards/) and [boards/variants/iotpostbox_v1/](b
 2. Configure services and device following the [WebConfigServer](https://github.com/paclema/WebConfigServer) style, editing the [`data/config/config.json`](/data/config/config.json) and uploading the Filesystem Image to the device.
 3. Build and upload the firmware to an IoT-PostBox device.
 4. Use the device WebConfigServer UI web portal for advanced options.
+
+---
+Derived from [iot_button#CO2_tracker](https://github.com/paclema/iot_button/tree/CO2_tracker)

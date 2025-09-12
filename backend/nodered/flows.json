@@ -1,0 +1,45 @@
+[
+  {
+    "id": "mqtt-in",
+    "type": "mqtt in",
+    "z": "",
+    "name": "iot-co2Tracker data",
+    "topic": "/iot-co2Tracker/+/data",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "mqtt-broker",
+    "nl": false,
+    "rap": true,
+    "x": 140,
+    "y": 120,
+    "wires": [["function-normalize"]]
+  },
+  {
+    "id": "function-normalize",
+    "type": "function",
+    "z": "",
+    "name": "normalize payload",
+    "func": "// pass-through; place for enrichment or validation\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 350,
+    "y": 120,
+    "wires": [["influx-out"]]
+  },
+  {
+    "id": "influx-out",
+    "type": "influxdb out",
+    "z": "",
+    "influxdb": "influxdb-config",
+    "name": "write measurements",
+    "measurement": "co2tracker",
+    "precision": "ms",
+    "retentionPolicy": "",
+    "x": 580,
+    "y": 120,
+    "wires": []
+  }
+]
