@@ -25,6 +25,10 @@ WebConfigServer config;   // <- global configuration object
 #include <Co2Tracker.h>
 Co2Tracker* co2Tracker = nullptr;
 
+#include <OneButton.h>
+#define BUTTON_PIN 0
+OneButton button0(BUTTON_PIN, true);
+
 // TFT screen and LVGL UI
 #include <lvgl.h>
 #include <TFT_eSPI.h>
@@ -133,6 +137,9 @@ void setup() {
   // esp_log_level_set("i2c.master", ESP_LOG_NONE);
   Serial.begin(115200);
 
+  button0.attachClick([]() {
+    digitalWrite(LDO2_EN_PIN, !digitalRead(LDO2_EN_PIN));
+  });
 
   Serial.println("###  LVGL setup\n");
   Serial.printf("LVGL V%d.%d.%d\n", lv_version_major(), lv_version_minor(), lv_version_patch());
@@ -215,6 +222,7 @@ void setup() {
 }
 
 void loop() {
+  button0.tick();
   
   lvHandlerTimerStart = millis();
   lv_timer_handler();
