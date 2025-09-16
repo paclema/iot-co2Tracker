@@ -137,6 +137,10 @@ void setup() {
   // esp_log_level_set("i2c.master", ESP_LOG_NONE);
   Serial.begin(115200);
 
+  #ifdef ENABLE_SERIAL_DEBUG
+    Serial.setDebugOutput(true);
+  #endif
+
   button0.attachClick([]() {
     digitalWrite(LDO2_EN_PIN, !digitalRead(LDO2_EN_PIN));
   });
@@ -162,12 +166,6 @@ void setup() {
 
   ui_init();
   // lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier, before setup completes ?
-
-  // delay(3000);
-  
-  #ifdef ENABLE_SERIAL_DEBUG
-    Serial.setDebugOutput(true);
-  #endif
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
   // // while(!Serial) {}
