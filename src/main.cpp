@@ -153,9 +153,10 @@ void setup() {
   lv_log_register_print_cb( my_print ); /* register print function for debugging */
 #endif
 
-  tft.begin();          /* TFT init */
-  delay(10);
-  tft.setRotation( TFT_ROTATION ); /* Landscape orientation, flipped */
+  tft.init(TFT_BLACK);
+  // tft.begin();          /* TFT init */
+  // tft.fillScreen(TFT_BLACK);
+  tft.setRotation( TFT_ROTATION );
 
   static lv_disp_t* disp;
   disp = lv_display_create( TFT_WIDTH, TFT_HEIGHT );
@@ -165,7 +166,7 @@ void setup() {
   lv_tick_set_cb( my_tick_get_cb );
 
   ui_init();
-  // lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier, before setup completes ?
+  lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier
 
   #ifdef ARDUINO_IOTPOSTBOX_V1
   // // while(!Serial) {}
