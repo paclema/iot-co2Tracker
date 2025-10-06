@@ -147,12 +147,12 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
 - Interface designed with SquareLine. The project can be found under [`SquareLineProject/`](SquareLineProject/).
 
 ### Backend services
-- Node-RED subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB.
+- Node-RED subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB (requires [node-red-contrib-influxdb](https://flows.nodered.org/node/node-red-contrib-influxdb) node installation).
 ![Node-RED_flow](docs/Node-RED_flow.png)
 - Example flow: [backend/nodered/flows.json](backend/nodered/flows.json)
 - Grafana dashboards read from InfluxDB.
 ![Grafana_data_example](docs/Grafana_data_example.png)
-- Example dashboard: [backend/grafana/dashboard.json](backend/grafana/dashboard.json)
+- Example dashboard: [backend/grafana/IoT-Co2Tracker_dashboard.json](backend/grafana/IoT-Co2Tracker_dashboard.json)
 - TTN formatters: see decoders in [formaters/](formaters/) for field mapping.
 
 ---
