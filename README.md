@@ -105,7 +105,7 @@ Notes
 
 Decoders: see [formaters/](formaters/) for TTN uplink decoders and field mapping.
 
-TTN setup (OTAA, quick)
+TTN setup (OTAA)
 1. Create an application `co2Tracker` and register a device.
 2. Set the device DEVEUI, APPEUI, and APPKEY to your `config.json`.
 3. Add the custom uplink decoder from [formaters/custom](formaters/custom) to your TTN application.
@@ -133,13 +133,13 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
 
 ### Firmware
 - PlatformIO project (ESP32). FreeRTOS tasks for sensors, UI, and communications.
-- Libraries used: 
+- Main Libraries used: 
+  - [WebConfigServer](https://github.com/paclema/WebConfigServer): to configure the device settings over a web interface and manage multiple common services
+  - [MQTTClient](https://github.com/paclema/MQTTClient): MQTT client library
+  - [LoRaWANClient](https://github.com/paclema/LoRaWANClient): LoRaWAN C++ client based on [Arduino-LMIC](https://github.com/mcci-catena/arduino-lmic)
+  - [PowerManagement](https://github.com/paclema/PowerManagement): power management library to read battery and power states
   - [SparkFun SCD30](https://github.com/sparkfun/SparkFun_SCD30_Arduino_Library): read CO₂, temperature, and humidity from the SCD30 sensor
   - [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus): parse GPS data
-  - [MQTTClient](https://github.com/paclema/MQTTClient): MQTT client library
-  - LoRaWANClient: LoRaWAN C++ client based on [Arduino-LMIC](https://github.com/mcci-catena/arduino-lmic)
-  - [WebConfigServer](https://github.com/paclema/WebConfigServer): to configure the device settings over a web interface and manage multiple common services
-  - [PowerManagement](https://github.com/paclema/PowerManagement): power management library to read battery and power states
 
 ### UI
 - Made up to use an 2.0" GMT020-02 TFT OLED SPI LCD (non-touch) screen.
@@ -147,32 +147,38 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
 - Interface designed with SquareLine. The project can be found under [`SquareLineProject/`](SquareLineProject/).
 
 ### Backend services
-- Node-RED subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB (requires [node-red-contrib-influxdb](https://flows.nodered.org/node/node-red-contrib-influxdb) node installation).
+
+- **Node-RED** subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB (requires [node-red-contrib-influxdb](https://flows.nodered.org/node/node-red-contrib-influxdb) node installation).
 ![Node-RED_flow](docs/Node-RED_flow.png)
-- Example flow: [backend/nodered/flows.json](backend/nodered/flows.json)
-- Grafana dashboards read from InfluxDB.
+- Example Node-RED flow: [backend/nodered/flows.json](backend/nodered/flows.json)
+- **Grafana** dashboards read from InfluxDB.
 ![Grafana_data_example](docs/Grafana_data_example.png)
-- Example dashboard: [backend/grafana/IoT-Co2Tracker_dashboard.json](backend/grafana/IoT-Co2Tracker_dashboard.json)
-- TTN formatters: see decoders in [formaters/](formaters/) for field mapping.
+- Example Grafana dashboard: [backend/grafana/IoT-Co2Tracker_dashboard.json](backend/grafana/IoT-Co2Tracker_dashboard.json)
+- **TTN formatters**: see decoders in [formaters/](formaters/) for field mapping.
 
 ---
 
 ## Hardware
 
-Essentials
+### Main Components
+
+The essential hardware components for this project include:
 - Board: IoT-PostBox (ESP32/ESP32-S2 with onboard RFM95W LoRa module)
 - Sensor: SCD30 (CO₂, temperature, humidity) over I²C
-- GPS (optional): u-blox M8N over serial
+- GPS (optional): u-blox M8N or compatible GPS module using serial UART
 - Display (optional): 2.0" GMT020-02 TFT OLED SPI LCD with ST7789V driver
 - Power: battery support with charging capabilities using IoT-PostBox
+
+### 3D Design & Enclosure
+
+- FreeCAD sources in [3Ddesigns/](3Ddesigns/)
+- External STL references documented in [3Ddesigns/lib/readme.md](3Ddesigns/lib/readme.md).
+
+### Pinout
 
 Pinout highlights (see [boards/](boards/) and [boards/variants/iotpostbox_v1/](boards/variants/iotpostbox_v1/) for full mapping)
 
 **TODO: add pinout diagram**
-
-3D printable case
-- FreeCAD sources in [3Ddesigns/](3Ddesigns/)
-- External STL references documented in [3Ddesigns/lib/readme.md](3Ddesigns/lib/readme.md).
 
 ---
 
@@ -183,4 +189,5 @@ Pinout highlights (see [boards/](boards/) and [boards/variants/iotpostbox_v1/](b
 4. Use the device WebConfigServer UI web portal for advanced options.
 
 ---
-Derived from [iot_button#CO2_tracker](https://github.com/paclema/iot_button/tree/CO2_tracker)
+
+This repo is derived from [iot_button#CO2_tracker](https://github.com/paclema/iot_button/tree/CO2_tracker)
