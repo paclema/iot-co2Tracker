@@ -15,3 +15,5 @@ data/certs/*
 # SquareLine Studio
 SquareLineProject/backup
 SquareLineProject/cache
+
+logs/
