@@ -12,7 +12,7 @@ An external GPS module can be connected via the serial port, allowing the device
 
 ```mermaid
 flowchart LR
-	Device[iot-co2Tracker]
+  	Device[IoT-CO2Tracker]
 	Broker[(MQTT Broker)]
 	GW[LoRaWAN Gateway]
 	TTN[The Things Network]
