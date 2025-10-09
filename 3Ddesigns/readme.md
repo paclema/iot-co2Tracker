@@ -17,7 +17,7 @@ This folder contains the FreeCAD design files and exported assets for the enclos
 
 ## Description
 
-The case is designed to fit the IoT-PostBox board, SCD30 sensor, GPS module, TFT display, and battery.  
+The case is designed to fit the IoT-PostBox board, SCD30 sensor, GPS module, TFT display, and a 1100mAh LiPo battery.  
 It provides protection and mounting points for all components, with cutouts for the display, connectors, and ventilation for the CO₂ sensor.
 
 **Rear Features:**  
