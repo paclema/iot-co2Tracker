@@ -141,8 +141,9 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
   - [SparkFun SCD30](https://github.com/sparkfun/SparkFun_SCD30_Arduino_Library): read CO₂, temperature, and humidity from the SCD30 sensor
   - [TinyGPSPlus](https://github.com/mikalhart/TinyGPSPlus): parse GPS data
 
-### UI
-- Made up to use an 2.0" GMT020-02 TFT OLED SPI LCD (non-touch) screen.
+### Display & User Interface (UI-LCD)
+
+- Designed for a 2.0" GMT020-02 TFT SPI LCD (ST7789V driver, non-touch).
 - Uses LVGL v9.
 - Interface designed with SquareLine. The project can be found under [`SquareLineProject/`](SquareLineProject/).
 
