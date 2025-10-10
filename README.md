@@ -146,6 +146,10 @@ time,latitude,longitude,altitude,speed,hdop,satellites,course,vBat,vBus,PowerSta
 - Uses LVGL v9.
 - Interface designed with SquareLine. The project can be found under [`SquareLineProject/`](SquareLineProject/).
 
+<p align="center">
+  <img src="docs/UI_design_co2Tracker.png" alt="UI Design" width="350"/>
+</p>
+
 ### Backend services
 
 - **Node-RED** subscribes to MQTT and TTN, processes messages, and stores data values in InfluxDB (requires [node-red-contrib-influxdb](https://flows.nodered.org/node/node-red-contrib-influxdb) node installation).
