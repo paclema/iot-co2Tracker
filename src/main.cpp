@@ -7,6 +7,8 @@
 // Enable wifi diagnostic using platformio build_glag: -D ENABLE_SERIAL_DEBUG:
 #define ENABLE_SERIAL_DEBUG true
 
+// To debug tasks and memory usage
+#include "debug_xTasks.h"
 
 // Device configurations
 unsigned long currentLoopMillis = 0;
@@ -221,6 +223,8 @@ void setup() {
 }
 
 void loop() {
+  // Loop lag detector
+  calculateLoopLag();
   button0.tick();
   
   lvHandlerTimerStart = millis();
@@ -234,6 +238,13 @@ void loop() {
     usedBytes = LittleFS.usedBytes();
     freeBytes  = totalBytes - usedBytes;
   }
+
+  // Memory log every defined MEM_LOG_EVERY_MS time
+  if (currentLoopMillis - prevMemLogMs >= MEM_LOG_EVERY_MS){
+    prevMemLogMs = currentLoopMillis;
+    logMemoryStats();
+  }
+
   config.loop();
   co2Tracker->loop();
 
