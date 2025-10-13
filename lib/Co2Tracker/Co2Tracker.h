@@ -32,7 +32,6 @@
 #include "ui.h"
 
 //Lora and TTN
-// #include <loraFunctions.h>
 #include <LoRaWANClient.h>
 #include <LoRaWANClientCallback.h>
 
