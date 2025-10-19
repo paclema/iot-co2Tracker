@@ -36,7 +36,7 @@
 #include <LoRaWANClientCallback.h>
 
 
-#ifdef ARDUINO_IOTPOSTBOX_V1
+#if defined(ARDUINO_IOTPOSTBOX_V1) || defined(ESP32)
 #include "PowerManagement.h"
 extern PowerManagement power;
 #endif

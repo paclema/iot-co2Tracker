@@ -78,7 +78,7 @@ void Co2Tracker::setMQTTClient(MQTTClient * client) {
 }
 
 void Co2Tracker::begin() {
-  #ifdef ARDUINO_IOTPOSTBOX_V1
+  #if defined(ARDUINO_IOTPOSTBOX_V1) || defined(ESP32)
       // while(!Serial) {}
       pinMode(LDO2_EN_PIN, OUTPUT);
       digitalWrite(LDO2_EN_PIN, HIGH);
@@ -214,7 +214,7 @@ void Co2Tracker::publishMQTT(bool publishCo2, bool publishGPS) {
     doc["course"] = gps.course.deg();
   }
   doc["rssi_STA"] = WiFi.RSSI();
-  #ifdef ARDUINO_IOTPOSTBOX_V1
+  #if defined(ARDUINO_IOTPOSTBOX_V1) || defined(ESP32)
   doc["vBat"] = (float)power.vBatSense.mV/1000;
   doc["vBus"] = (float)power.vBusSense.mV/1000;
   doc["PowerStatus"] = (int)power.getPowerStatus();

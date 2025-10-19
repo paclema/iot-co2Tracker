@@ -67,7 +67,7 @@ void my_disp_flush (lv_display_t *disp, const lv_area_t *area, uint8_t *pixelmap
 
 static uint32_t my_tick_get_cb (void) { return millis(); }
 
-#ifdef ARDUINO_IOTPOSTBOX_V1
+#if defined(ARDUINO_IOTPOSTBOX_V1) || defined(ESP32)
 #include "PowerManagement.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -127,7 +127,7 @@ String getMemoryUsageString(){
   String r = String("\"Used: " + config.formatBytes(usedBytes) + " Free: " +  config.formatBytes(freeBytes) + "\"");
   // Serial.println(r);
   return r;}
-String getMemoryFree(){  return String(freeBytes);};  
+String getMemoryFree(){  return String(freeBytes);};
 String getVBat(){ return String((float)power.vBatSense.mV/1000,4);}
 String getVBus(){ return String((float)power.vBusSense.mV/1000,3);}
 
@@ -168,7 +168,7 @@ void setup() {
   ui_init();
   lv_timer_handler(); // Call LVGL timer handler first time to refresh the screen earlier
 
-  #ifdef ARDUINO_IOTPOSTBOX_V1
+  #if defined(ARDUINO_IOTPOSTBOX_V1) || defined(ESP32)
   // // while(!Serial) {}
   power.setup();
   power.update();
